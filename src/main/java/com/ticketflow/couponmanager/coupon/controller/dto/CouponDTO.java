@@ -1,11 +1,10 @@
 package com.ticketflow.couponmanager.coupon.controller.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,10 +15,8 @@ public class CouponDTO {
 
     private String id;
 
-    @NotBlank
     private String name;
 
-    @NotBlank
     private String description;
 
     private Float discountValue;
@@ -28,7 +25,7 @@ public class CouponDTO {
 
     private Status status;
 
-    @NotNull
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
     @DateTimeFormat(pattern = "dd/MM/yyyy HH:mm")
     private LocalDateTime expirationDate;
 

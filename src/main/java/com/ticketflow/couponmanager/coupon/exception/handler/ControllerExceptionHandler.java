@@ -31,45 +31,24 @@ public class ControllerExceptionHandler {
 
 
     @ExceptionHandler(CouponException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorMessage couponHandler(CouponException ex, WebRequest request) {
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorMessage couponHandler(CouponException ex) {
         ErrorMessage error = new ErrorMessage(
                 ex.getErrorCode().getCode(),
                 messageSource.getMessage(ex.getErrorCode().getCode(), ex.getErrorCode().getParameters(), Locale.getDefault())
-
         );
+
         log.warn(ex.getMessage(), ex);
         return error;
     }
 
     @ExceptionHandler(ConfigException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorMessage genericHandler(ConfigException ex, WebRequest request) {
+    public ErrorMessage genericHandler(ConfigException ex) {
         ErrorMessage error = new ErrorMessage(
                 ex.getErrorCode().getCode(),
                 messageSource.getMessage(ex.getErrorCode().getCode(), ex.getErrorCode().getParameters(), Locale.getDefault())
         );
-        log.warn(ex.getMessage(), ex);
-        return error;
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorMessage handleMethodArgumentNotValid(MethodArgumentNotValidException ex, WebRequest request) {
-        BindingResult bindingResult = ex.getBindingResult();
-        List<FieldError> fieldErrors = bindingResult.getFieldErrors();
-
-        String fields = fieldErrors.stream()
-                .map(FieldError::getField)
-                .collect(Collectors.joining(", "));
-
-        ErrorCode errorCode = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams(fields);
-
-        ErrorMessage error = new ErrorMessage(
-                errorCode.getCode(),
-                messageSource.getMessage(errorCode.getCode(), errorCode.getParameters(), Locale.getDefault())
-        );
-
         log.warn(ex.getMessage(), ex);
         return error;
     }

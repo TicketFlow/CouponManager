@@ -3,10 +3,10 @@ package com.ticketflow.couponmanager.coupon.controller;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.service.CouponService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
 
 @RequestMapping("/coupon")
 @RestController
@@ -21,7 +21,7 @@ public class CouponController {
     }
 
     @PostMapping
-    public Mono<CouponDTO> createCoupon(@RequestBody @Validated CouponDTO coupon) {
+    public Mono<CouponDTO> createCoupon(@RequestBody CouponDTO coupon) {
         return couponService.createCoupon(coupon);
     }
 

@@ -14,6 +14,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -45,30 +47,52 @@ public class CouponService {
 
     private Mono<CouponDTO> validateFields(CouponDTO coupon) {
         log.debug("Validating coupon");
+        return checkForEmptyFields(coupon)
+                .flatMap(couponDTO -> {
+                    boolean isDiscountValuePresent = couponDTO.getDiscountValue() != null;
+                    boolean isDiscountPercentagePresent = couponDTO.getDiscountPercentage() != null;
+                    boolean isExpirationDateValid = couponDTO.getExpirationDate().isAfter(LocalDateTime.now());
+                    boolean isDiscountValueValid = couponDTO.getDiscountValue() == null || couponDTO.getDiscountValue().compareTo(0f) > 0;
+                    boolean isDiscountPercentageValid = couponDTO.getDiscountPercentage() == null || couponDTO.getDiscountPercentage().compareTo(0f) > 0;
 
-        boolean isDiscountValuePresent = coupon.getDiscountValue() != null;
-        boolean isDiscountPercentagePresent = coupon.getDiscountPercentage() != null;
-        boolean isExpirationDateValid = coupon.getExpirationDate().isAfter(LocalDateTime.now());
-        boolean isDiscountValueValid = coupon.getDiscountValue() == null || coupon.getDiscountValue().compareTo(0f) > 0;
-        boolean isDiscountPercentageValid = coupon.getDiscountPercentage() == null || coupon.getDiscountPercentage().compareTo(0f) > 0;
+                    if (!isDiscountValuePresent && !isDiscountPercentagePresent) {
+                        return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
+                    }
 
-        if (!isDiscountValuePresent && !isDiscountPercentagePresent) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
+                    if (!isExpirationDateValid) {
+                        return Mono.error(new CouponException(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.withNoParams()));
+                    }
+
+                    if (!isDiscountPercentageValid) {
+                        return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withNoParams()));
+                    }
+
+                    if (!isDiscountValueValid) {
+                        return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withNoParams()));
+                    }
+
+                    couponDTO.setStatus(Status.ACTIVE);
+                    return Mono.just(couponDTO);
+                });
+    }
+
+    public Mono<CouponDTO> checkForEmptyFields(CouponDTO coupon) {
+        List<String> emptyFields = new ArrayList<>();
+
+        if (coupon.getName() == null || coupon.getName().isBlank()) {
+            emptyFields.add("name");
+        }
+        if (coupon.getDescription() == null || coupon.getDescription().isBlank()) {
+            emptyFields.add("description");
+        }
+        if (coupon.getExpirationDate() == null) {
+            emptyFields.add("expirationDate");
         }
 
-        if (!isExpirationDateValid) {
-            return Mono.error(new CouponException(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.withNoParams()));
+        if (!emptyFields.isEmpty()) {
+            String fields = String.join(", ", emptyFields);
+            return Mono.error(new CouponException(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams(fields)));
         }
-
-        if (!isDiscountPercentageValid) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withNoParams()));
-        }
-
-        if (!isDiscountValueValid ) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withNoParams()));
-        }
-
-        coupon.setStatus(Status.ACTIVE);
 
         return Mono.just(coupon);
     }

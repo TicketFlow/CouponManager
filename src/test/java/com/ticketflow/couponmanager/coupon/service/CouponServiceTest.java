@@ -1,9 +1,12 @@
 package com.ticketflow.couponmanager.coupon.service;
 
 
+import com.google.gson.Gson;
+import com.jayway.jsonpath.JsonPath;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import com.ticketflow.couponmanager.coupon.repository.CouponRepository;
 import com.ticketflow.couponmanager.testbuilder.CouponTestBuilder;
@@ -13,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -20,7 +24,9 @@ import reactor.test.StepVerifier;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class CouponServiceTest {
@@ -113,9 +119,18 @@ public class CouponServiceTest {
                 .discountValue(null)
                 .build();
 
-        StepVerifier.create(couponService.createCoupon(coupon))
-                .expectError(CouponException.class)
+        Mono<CouponDTO> result = couponService.createCoupon(coupon);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_1");
+                    return true;
+                })
                 .verify();
+
+        verify(couponRepository, never()).save(any());
     }
 
     @Test
@@ -129,7 +144,13 @@ public class CouponServiceTest {
         Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
 
         StepVerifier.create(result)
-                .verifyError(CouponException.class);
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_2");
+                    return true;
+                })
+                .verify();
 
         verify(couponRepository, never()).save(any());
     }
@@ -145,7 +166,13 @@ public class CouponServiceTest {
         Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
 
         StepVerifier.create(result)
-                .verifyError(CouponException.class);
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_4");
+                    return true;
+                })
+                .verify();
 
         verify(couponRepository, never()).save(any());
     }
@@ -161,7 +188,124 @@ public class CouponServiceTest {
         Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
 
         StepVerifier.create(result)
-                .verifyError(CouponException.class);
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_3");
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to create a coupon with empty name")
+    void createCoupon_EmptyName_ReturnsError() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .name("")
+                .build();
+
+        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to create a coupon with name containing only spaces")
+    void createCoupon_NameWithSpaces_ReturnsError() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .name("   ")
+                .build();
+
+        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to create a coupon with empty description")
+    void createCoupon_WithEmptyDescription_ReturnsError() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .description("")
+                .build();
+
+        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to create a coupon with description containing only spaces")
+    void createCoupon_DescriptionWithSpaces_ReturnsError() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .description("   ")
+                .build();
+
+        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to create a coupon with empty expiration date")
+    void createCoupon_EmptyExpirationDate_ReturnsError() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .expirationDate(null)
+                .build();
+
+        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException couponException = (CouponException) error;
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    return true;
+                })
+                .verify();
+
 
         verify(couponRepository, never()).save(any());
     }
