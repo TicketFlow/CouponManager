@@ -1,15 +1,19 @@
-package com.ticketflow.couponmanager.model;
+package com.ticketflow.couponmanager.coupon.model;
 
+import com.ticketflow.couponmanager.coupon.enums.Status;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(value="coupon")
@@ -26,9 +30,9 @@ public class Coupon {
 
     private Float discountPercentage;
 
-    private String active;
+    private Status status;
 
-    private List<Long> type;
+    private String code;
 
     private LocalDateTime expirationDate;
 
