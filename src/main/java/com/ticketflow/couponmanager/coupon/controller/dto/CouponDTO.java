@@ -1,13 +1,12 @@
 package com.ticketflow.couponmanager.coupon.controller.dto;
 
 import com.ticketflow.couponmanager.coupon.enums.Status;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
