@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import com.ticketflow.couponmanager.coupon.repository.CouponRepository;
@@ -37,6 +38,8 @@ public class CouponServiceTest {
     private CouponService couponService;
 
     private ModelMapper modelMapper;
+
+    private final String COUPON_ID = "12345";
 
     @BeforeEach
     public void setUp() {
@@ -84,7 +87,7 @@ public class CouponServiceTest {
 
     @Test
     @DisplayName("Should create a new coupon")
-    public void createCoupon_WithValidCoupon_CreatesCoupon() {
+    public void createCoupon_WithValidCoupon_Succeed() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -112,7 +115,7 @@ public class CouponServiceTest {
 
     @Test
     @DisplayName("Should return an error when trying to create a coupon with missing discount fields")
-    public void createCoupon_WithMissingDiscountFields_ThrowsCouponException() {
+    public void createCoupon_WithMissingDiscountFields_ReturnsError() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountPercentage(null)
@@ -309,4 +312,86 @@ public class CouponServiceTest {
 
         verify(couponRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should return an error when trying to validate a coupon that doesn't exist")
+    void validateCoupon_couponNotFound_ReturnsError() {
+        when(couponRepository.findById(COUPON_ID)).thenReturn(Mono.empty());
+
+        Mono<CouponDTO> result = couponService.validateCoupon(COUPON_ID);
+
+        StepVerifier.create(result)
+            .expectErrorMatches(error -> {
+                assertThat(error).isInstanceOf(NotFoundException.class);
+                NotFoundException exception = (NotFoundException) error;
+                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_7");
+                return true;
+            })
+            .verify();
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to validate a coupon that is expired")
+    void validateCoupon_couponExpired_ReturnsError() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .expirationDate(LocalDateTime.now().minusDays(1))
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+
+        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
+
+        StepVerifier.create(result)
+            .expectErrorMatches(error -> {
+                assertThat(error).isInstanceOf(CouponException.class);
+                CouponException exception = (CouponException) error;
+                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_6");
+                return true;
+            })
+            .verify();
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to validate a coupon that is disabled")
+    void validateCoupon_invalidCoupon_ReturnsError() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+
+        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
+
+        StepVerifier.create(result)
+            .expectErrorMatches(error -> {
+                assertThat(error).isInstanceOf(CouponException.class);
+                CouponException exception = (CouponException) error;
+                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_8");
+                return true;
+            })
+            .verify();
+    }
+
+    @Test
+    @DisplayName("Should validate a coupon")
+    void validateCoupon_validCoupon_Succeed() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+
+        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
+
+        StepVerifier.create(result)
+                .expectNext(couponDTO)
+                .verifyComplete();
+    }
+
 }

@@ -25,4 +25,9 @@ public class CouponController {
         return couponService.createCoupon(coupon);
     }
 
+    @GetMapping("/validate/{id}")
+    public Mono<CouponDTO> validateCoupon(@PathVariable String id) {
+        return couponService.validateCoupon(id);
+    }
+
 }
