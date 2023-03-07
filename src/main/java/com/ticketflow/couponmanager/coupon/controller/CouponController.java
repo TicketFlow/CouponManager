@@ -2,20 +2,22 @@ package com.ticketflow.couponmanager.coupon.controller;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.service.CouponService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
-@RequestMapping("/coupon")
 @RestController
+@RequestMapping("/coupon")
 public class CouponController {
 
-    @Autowired
-    private CouponService couponService;
+    private final CouponService couponService;
 
-    @GetMapping()
+    public CouponController(CouponService couponService) {
+        this.couponService = couponService;
+    }
+
+    @GetMapping("/all")
     public Flux<CouponDTO> getCoupons() {
         return couponService.getCoupons();
     }
@@ -25,9 +27,14 @@ public class CouponController {
         return couponService.createCoupon(coupon);
     }
 
-    @GetMapping("/validate/{id}")
+    @GetMapping("/{id}/validate")
     public Mono<CouponDTO> validateCoupon(@PathVariable String id) {
         return couponService.validateCoupon(id);
+    }
+
+    @PutMapping("/{id}/deactivate")
+    public Mono<CouponDTO> deactivateCoupon(@PathVariable String id) {
+        return couponService.deactivateCoupon(id);
     }
 
 }

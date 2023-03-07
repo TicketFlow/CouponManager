@@ -36,4 +36,6 @@ public class Coupon {
 
     private LocalDateTime expirationDate;
 
+    private String responsibleUser;
+
 }

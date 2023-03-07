@@ -128,7 +128,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_1");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.getCode());
                     return true;
                 })
                 .verify();
@@ -150,7 +150,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_2");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.getCode());
                     return true;
                 })
                 .verify();
@@ -172,7 +172,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_4");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.getCode());
                     return true;
                 })
                 .verify();
@@ -194,7 +194,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_3");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.getCode());
                     return true;
                 })
                 .verify();
@@ -216,7 +216,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
                     return true;
                 })
                 .verify();
@@ -238,7 +238,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
                     return true;
                 })
                 .verify();
@@ -260,7 +260,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
                     return true;
                 })
                 .verify();
@@ -282,7 +282,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
                     return true;
                 })
                 .verify();
@@ -304,7 +304,7 @@ public class CouponServiceTest {
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo("CPM_SRVC_5");
+                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
                     return true;
                 })
                 .verify();
@@ -324,7 +324,7 @@ public class CouponServiceTest {
             .expectErrorMatches(error -> {
                 assertThat(error).isInstanceOf(NotFoundException.class);
                 NotFoundException exception = (NotFoundException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_7");
+                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
                 return true;
             })
             .verify();
@@ -346,7 +346,7 @@ public class CouponServiceTest {
             .expectErrorMatches(error -> {
                 assertThat(error).isInstanceOf(CouponException.class);
                 CouponException exception = (CouponException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_6");
+                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_EXPIRED.getCode());
                 return true;
             })
             .verify();
@@ -368,7 +368,7 @@ public class CouponServiceTest {
             .expectErrorMatches(error -> {
                 assertThat(error).isInstanceOf(CouponException.class);
                 CouponException exception = (CouponException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo("CPM_SRVC_8");
+                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.INVALID_COUPON.getCode());
                 return true;
             })
             .verify();
@@ -392,6 +392,56 @@ public class CouponServiceTest {
         StepVerifier.create(result)
                 .expectNext(couponDTO)
                 .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should deactivate a coupon")
+    public void deactivateCoupon_validCoupon_Succeed() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponRepository.save(coupon)).thenReturn(Mono.just(coupon));
+
+        Mono<CouponDTO> result = couponService.deactivateCoupon(coupon.getId());
+
+        StepVerifier.create(result)
+                .expectNext(couponDTO)
+                .verifyComplete();
+
+        verify(couponRepository, times(1)).findById(coupon.getId());
+        verify(couponRepository, times(1)).save(coupon);
+    }
+
+    @Test
+    @DisplayName("Should return an error when trying to deactivate a coupon that is already inactive")
+    public void deactivateCoupon_couponAlreadyInactive_ReturnsError() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+
+        Mono<CouponDTO> result = couponService.deactivateCoupon(coupon.getId());
+
+        StepVerifier.create(result)
+                .expectErrorMatches(error -> {
+                    assertThat(error).isInstanceOf(CouponException.class);
+                    CouponException exception = (CouponException) error;
+                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_ALREADY_INACTIVE.getCode());
+                    return true;
+                })
+                .verify();
+
+        verify(couponRepository, times(1)).findById(coupon.getId());
+        verify(couponRepository, never()).save(any());
     }
 
 }

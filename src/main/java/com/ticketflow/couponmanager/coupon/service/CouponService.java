@@ -40,7 +40,7 @@ public class CouponService {
 
     public Mono<CouponDTO> createCoupon(CouponDTO coupon) {
         log.info("Creating new coupon");
-        return validateFields(coupon)
+        return validateCoupon(coupon)
                 .map(couponDTO -> modelMapper.map(couponDTO, Coupon.class))
                 .flatMap(couponRepository::save)
                 .map(couponEntity -> modelMapper.map(couponEntity, CouponDTO.class));
@@ -58,7 +58,20 @@ public class CouponService {
                 .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
     }
 
-    private Mono<CouponDTO> validateFields(CouponDTO coupon) {
+    public Mono<CouponDTO> deactivateCoupon(String couponId) {
+        return couponRepository.findById(couponId)
+                .flatMap(coupon -> {
+                    if (coupon.getStatus() == Status.INACTIVE) {
+                        return Mono.error(new CouponException(CouponErrorCode.COUPON_ALREADY_INACTIVE.withParams(couponId)));
+                    }
+
+                    coupon.setStatus(Status.INACTIVE);
+                    return couponRepository.save(coupon)
+                            .map(savedCoupon -> modelMapper.map(savedCoupon, CouponDTO.class));
+                });
+    }
+
+    private Mono<CouponDTO> validateCoupon(CouponDTO coupon) {
         log.debug("Validating coupon");
 
         return checkForEmptyFields(coupon)
