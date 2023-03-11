@@ -21,14 +21,14 @@ public abstract class ConfigException extends RuntimeException {
     @Override
     public String getMessage() {
 
-        String suffix = "";
+        StringBuilder suffix = new StringBuilder();
         if (errorCode != null && ArrayUtils.isNotEmpty(errorCode.getParameters())) {
-            suffix += " - ";
+            suffix.append(" - ");
             for (Object parameter : errorCode.getParameters()) {
                 if (parameter == null)
-                    suffix += "null";
+                    suffix.append("null");
                 else
-                    suffix += parameter.toString();
+                    suffix.append(parameter.toString());
             }
         }
 

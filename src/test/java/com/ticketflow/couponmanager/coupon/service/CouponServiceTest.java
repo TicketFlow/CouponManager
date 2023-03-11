@@ -38,14 +38,10 @@ public class CouponServiceTest {
 
     private CouponService couponService;
 
-    private ModelMapper modelMapper;
-
-    private final String COUPON_ID = "12345";
-
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        modelMapper = new ModelMapper();
+        ModelMapper modelMapper = new ModelMapper();
         couponService = new CouponService(couponRepository, modelMapper);
     }
 
@@ -76,7 +72,7 @@ public class CouponServiceTest {
 
         List<Coupon> coupons = Arrays.asList(coupon1, coupon2);
 
-        when(couponRepository.findAll()).thenReturn(Flux.fromIterable(coupons));
+        when(couponRepository.findByFilter(new CouponFilter())).thenReturn(Flux.fromIterable(coupons));
 
         Flux<CouponDTO> result = couponService.getCoupons(new CouponFilter());
 
@@ -317,6 +313,7 @@ public class CouponServiceTest {
     @Test
     @DisplayName("Should return an error when trying to validate a coupon that doesn't exist")
     void validateCoupon_couponNotFound_ReturnsError() {
+        String COUPON_ID = "12345";
         when(couponRepository.findById(COUPON_ID)).thenReturn(Mono.empty());
 
         Mono<CouponDTO> result = couponService.validateCoupon(COUPON_ID);
@@ -407,8 +404,13 @@ public class CouponServiceTest {
                 .status(Status.INACTIVE)
                 .build();
 
+        Coupon couponInactive = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
         when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
-        when(couponRepository.save(coupon)).thenReturn(Mono.just(coupon));
+        when(couponRepository.updateStatus(coupon.getId(), Status.INACTIVE)).thenReturn(Mono.just(couponInactive));
 
         Mono<CouponDTO> result = couponService.deactivateCoupon(coupon.getId());
 
@@ -417,7 +419,7 @@ public class CouponServiceTest {
                 .verifyComplete();
 
         verify(couponRepository, times(1)).findById(coupon.getId());
-        verify(couponRepository, times(1)).save(coupon);
+        verify(couponRepository, times(1)).updateStatus(coupon.getId(), Status.INACTIVE);
     }
 
     @Test

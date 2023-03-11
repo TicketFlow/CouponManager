@@ -5,6 +5,7 @@ import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import com.ticketflow.couponmanager.coupon.repository.CustomCouponRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -22,9 +23,11 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
     @Override
     public Mono<Coupon> updateStatus(String couponId, Status couponStatus) {
         Query query = new Query(Criteria.where("_id").is(couponId));
-        Update update = new Update().set("status", couponStatus);
+        Update update = new Update().set("status", couponStatus.name());
 
-        return mongoTemplate.findAndModify(query, update, Coupon.class);
+        FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true);
+
+        return mongoTemplate.findAndModify(query, update, options, Coupon.class);
     }
 
     @Override

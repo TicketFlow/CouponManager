@@ -22,7 +22,7 @@ public class CouponTestBuilder {
 
     private static final String CODE = "12345abcdef";
 
-    private static final LocalDateTime EXPIRATION_DATE = LocalDateTime.now().plusDays(5);
+    private static final LocalDateTime EXPIRATION_DATE = LocalDateTime.now().plusDays(5).withSecond(0).withNano(0);
 
     public static CouponTestBuilder init() {
         return new CouponTestBuilder();

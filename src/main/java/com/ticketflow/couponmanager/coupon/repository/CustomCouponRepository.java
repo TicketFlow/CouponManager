@@ -6,6 +6,7 @@ import com.ticketflow.couponmanager.coupon.model.Coupon;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+
 public interface CustomCouponRepository {
 
     Mono<Coupon> updateStatus(String couponId, Status couponStatus);

@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-
 @RestController
 @RequestMapping("/coupon")
 public class CouponController {
@@ -19,7 +18,7 @@ public class CouponController {
     }
 
     @GetMapping
-    public Flux<CouponDTO> getCoupons(@RequestBody CouponFilter couponFilter) {
+    public Flux<CouponDTO> getCoupons(@ModelAttribute("couponFilter") CouponFilter couponFilter) {
         return couponService.getCoupons(couponFilter);
     }
 
