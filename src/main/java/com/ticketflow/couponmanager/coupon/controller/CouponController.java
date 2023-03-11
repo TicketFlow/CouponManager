@@ -1,6 +1,7 @@
 package com.ticketflow.couponmanager.coupon.controller;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
+import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
 import com.ticketflow.couponmanager.coupon.service.CouponService;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -17,9 +18,9 @@ public class CouponController {
         this.couponService = couponService;
     }
 
-    @GetMapping("/all")
-    public Flux<CouponDTO> getCoupons() {
-        return couponService.getCoupons();
+    @GetMapping
+    public Flux<CouponDTO> getCoupons(@RequestBody CouponFilter couponFilter) {
+        return couponService.getCoupons(couponFilter);
     }
 
     @PostMapping
