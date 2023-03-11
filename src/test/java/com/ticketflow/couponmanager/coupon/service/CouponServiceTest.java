@@ -4,6 +4,7 @@ package com.ticketflow.couponmanager.coupon.service;
 import com.google.gson.Gson;
 import com.jayway.jsonpath.JsonPath;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
+import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
@@ -77,7 +78,7 @@ public class CouponServiceTest {
 
         when(couponRepository.findAll()).thenReturn(Flux.fromIterable(coupons));
 
-        Flux<CouponDTO> result = couponService.getCoupons();
+        Flux<CouponDTO> result = couponService.getCoupons(new CouponFilter());
 
         StepVerifier.create(result)
                 .expectNext(couponDTO1)

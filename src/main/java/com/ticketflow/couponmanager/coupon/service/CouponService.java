@@ -1,6 +1,7 @@
 package com.ticketflow.couponmanager.coupon.service;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
+import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
@@ -32,14 +33,16 @@ public class CouponService {
         this.modelMapper = modelMapper;
     }
 
-    public Flux<CouponDTO> getCoupons() {
-        log.info("Getting all coupons");
-        return couponRepository.findAll()
+    public Flux<CouponDTO> getCoupons(CouponFilter couponFilter) {
+        log.info("Getting coupons");
+
+        return couponRepository.findByFilter(couponFilter)
                 .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
     }
 
     public Mono<CouponDTO> createCoupon(CouponDTO coupon) {
         log.info("Creating new coupon");
+
         return validateCoupon(coupon)
                 .map(couponDTO -> modelMapper.map(couponDTO, Coupon.class))
                 .flatMap(couponRepository::save)
@@ -64,9 +67,7 @@ public class CouponService {
                     if (coupon.getStatus() == Status.INACTIVE) {
                         return Mono.error(new CouponException(CouponErrorCode.COUPON_ALREADY_INACTIVE.withParams(couponId)));
                     }
-
-                    coupon.setStatus(Status.INACTIVE);
-                    return couponRepository.save(coupon)
+                    return couponRepository.updateStatus(couponId, Status.INACTIVE)
                             .map(savedCoupon -> modelMapper.map(savedCoupon, CouponDTO.class));
                 });
     }
