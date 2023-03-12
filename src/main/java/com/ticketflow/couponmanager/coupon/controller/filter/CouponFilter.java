@@ -28,7 +28,11 @@ public class CouponFilter {
     @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
     private LocalDateTime expirationDate;
 
-    private ExpirationDateRange expirationDateBetween;
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    private LocalDateTime expirationDateStart;
+
+    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
+    private LocalDateTime expirationDateEnd;
 
     private String code;
 }

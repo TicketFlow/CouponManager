@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -60,13 +61,15 @@ class CouponControllerTest {
                 .expectBodyList(CouponDTO.class)
                 .hasSize(1)
                 .contains(coupon);
+
+        verify(couponService).getCoupons(any(CouponFilter.class));
     }
 
     @Test
     @DisplayName("Creating a coupon should return the created coupon")
     public void createCoupon_ReturnsCreatedCoupon() {
         CouponDTO coupon = CouponTestBuilder.init().buildDTOWithDefaultValues().build();
-        when(couponService.createCoupon(any())).thenReturn(Mono.just(coupon));
+        when(couponService.createCoupon(coupon)).thenReturn(Mono.just(coupon));
 
         webTestClient.post()
                 .uri("/coupon")
@@ -77,6 +80,8 @@ class CouponControllerTest {
                 .expectStatus().isOk()
                 .expectBody(CouponDTO.class)
                 .isEqualTo(coupon);
+
+        verify(couponService).createCoupon(coupon);
     }
 
     @Test
@@ -86,29 +91,37 @@ class CouponControllerTest {
                 .buildDTOWithDefaultValues()
                 .build();
 
-        when(couponService.validateCoupon(any())).thenReturn(Mono.just(coupon));
+        when(couponService.validateCoupon(coupon.getId())).thenReturn(Mono.just(coupon));
 
         webTestClient.get()
-                .uri("/coupon/{id}/validate", "1")
+                .uri("/coupon/{id}/validate", coupon.getId())
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CouponDTO.class)
                 .isEqualTo(coupon);
+
+        verify(couponService).validateCoupon(coupon.getId());
     }
 
     @Test
-    @DisplayName("Deactivating an active coupon should return the deactivated coupon")
-    public void deactivateCoupon_ReturnsDeactivatedCoupon() {
-        CouponDTO coupon = CouponTestBuilder.init().buildDTOWithDefaultValues().status(Status.ACTIVE).build();
-        when(couponService.deactivateCoupon(any())).thenReturn(Mono.just(coupon));
+    @DisplayName("Should return updated coupon")
+    public void updateCoupon_ReturnsUpdatedCoupon() {
+        CouponDTO coupon = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        when(couponService.updateCoupon(coupon)).thenReturn(Mono.just(coupon));
 
         webTestClient.put()
-                .uri("/coupon/{id}/deactivate", "1")
+                .uri("/coupon")
+                .body(BodyInserters.fromValue(coupon))
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CouponDTO.class)
                 .isEqualTo(coupon);
+
+        verify(couponService).updateCoupon(coupon);
     }
 }

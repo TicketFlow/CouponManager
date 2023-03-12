@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+
 @RestController
 @RequestMapping("/coupon")
 public class CouponController {
@@ -32,9 +33,9 @@ public class CouponController {
         return couponService.validateCoupon(id);
     }
 
-    @PutMapping("/{id}/deactivate")
-    public Mono<CouponDTO> deactivateCoupon(@PathVariable String id) {
-        return couponService.deactivateCoupon(id);
+    @PutMapping
+    public Mono<CouponDTO> updateCoupon(@RequestBody CouponDTO couponDTO) {
+        return couponService.updateCoupon(couponDTO);
     }
 
 }

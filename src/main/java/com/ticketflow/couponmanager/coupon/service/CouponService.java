@@ -50,7 +50,7 @@ public class CouponService {
     }
 
     public Mono<CouponDTO> validateCoupon(String couponId) {
-        log.info("Validate coupon. Id: " + couponId);
+        log.debug("Validate coupon  id: {}", couponId);
 
         return couponRepository.findById(couponId)
                 .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId))))
@@ -61,47 +61,78 @@ public class CouponService {
                 .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
     }
 
-    public Mono<CouponDTO> deactivateCoupon(String couponId) {
-        return couponRepository.findById(couponId)
-                .flatMap(coupon -> {
-                    if (coupon.getStatus() == Status.INACTIVE) {
-                        return Mono.error(new CouponException(CouponErrorCode.COUPON_ALREADY_INACTIVE.withParams(couponId)));
+    public Mono<CouponDTO> updateCoupon(CouponDTO couponDTO) {
+        log.debug("Updating coupon id: {}", couponDTO.getId());
+
+        if (couponDTO.getId() == null) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withNoParams()));
+        }
+
+        return couponRepository.findById(couponDTO.getId())
+            .switchIfEmpty(Mono.error(new CouponException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponDTO.getId()))))
+            .flatMap(couponEntity -> {
+
+                if (couponDTO.getStatus() == null) {
+                    return Mono.error(new CouponException(CouponErrorCode.COUPON_STATUS_REQUIRED.withNoParams()));
+                }
+
+                if (couponDTO.getStatus() == Status.ACTIVE) {
+                    if (couponDTO.getExpirationDate() == null) {
+                        return Mono.error(new CouponException(CouponErrorCode.COUPON_EXPIRATION_DATE_REQUIRED.withNoParams()));
+                    } else if (couponDTO.getExpirationDate().compareTo(LocalDateTime.now()) <= 0) {
+                        return Mono.error(new CouponException(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.withParams(couponEntity.getId())));
                     }
-                    return couponRepository.updateStatus(couponId, Status.INACTIVE)
-                            .map(savedCoupon -> modelMapper.map(savedCoupon, CouponDTO.class));
-                });
+                }
+
+                return validateDiscountFields(couponDTO)
+                        .flatMap(this::checkForEmptyFields)
+                        .map(coupon -> modelMapper.map(coupon, Coupon.class))
+                        .flatMap(couponRepository::update)
+                        .map(updatedCoupon -> modelMapper.map(updatedCoupon, CouponDTO.class));
+            });
     }
 
     private Mono<CouponDTO> validateCoupon(CouponDTO coupon) {
-        log.debug("Validating coupon");
+        log.debug("Validating coupon id: {}", coupon.getId());
 
         return checkForEmptyFields(coupon)
             .flatMap(couponDTO -> {
-                boolean isDiscountValuePresent = couponDTO.getDiscountValue() != null;
-                boolean isDiscountPercentagePresent = couponDTO.getDiscountPercentage() != null;
+                boolean expirationDateExists = couponDTO.getExpirationDate() != null;
                 boolean isExpirationDateValid = couponDTO.getExpirationDate().isAfter(LocalDateTime.now());
-                boolean isDiscountValueValid = couponDTO.getDiscountValue() == null || couponDTO.getDiscountValue().compareTo(0f) > 0;
-                boolean isDiscountPercentageValid = couponDTO.getDiscountPercentage() == null || couponDTO.getDiscountPercentage().compareTo(0f) > 0;
-
-                if (!isDiscountValuePresent && !isDiscountPercentagePresent) {
-                    return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
-                }
 
                 if (!isExpirationDateValid) {
                     return Mono.error(new CouponException(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.withNoParams()));
                 }
 
-                if (!isDiscountPercentageValid) {
-                    return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withNoParams()));
-                }
-
-                if (!isDiscountValueValid) {
-                    return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withNoParams()));
+                if (!expirationDateExists) {
+                    return Mono.error(new CouponException(CouponErrorCode.COUPON_EXPIRATION_DATE_REQUIRED.withNoParams()));
                 }
 
                 couponDTO.setStatus(Status.ACTIVE);
-                return Mono.just(couponDTO);
+
+                return validateDiscountFields(couponDTO);
             });
+    }
+
+    private Mono<CouponDTO> validateDiscountFields(CouponDTO couponDTO) {
+        boolean isDiscountValueValid = couponDTO.getDiscountValue() == null || couponDTO.getDiscountValue().compareTo(0f) > 0;
+        boolean isDiscountPercentageValid = couponDTO.getDiscountPercentage() == null || couponDTO.getDiscountPercentage().compareTo(0f) > 0;
+        boolean isDiscountValuePresent = couponDTO.getDiscountValue() != null;
+        boolean isDiscountPercentagePresent = couponDTO.getDiscountPercentage() != null;
+
+        if (!isDiscountValuePresent && !isDiscountPercentagePresent) {
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
+        }
+
+        if (!isDiscountPercentageValid) {
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withNoParams()));
+        }
+
+        if (!isDiscountValueValid) {
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withNoParams()));
+        }
+
+        return Mono.just(couponDTO);
     }
 
     public Mono<CouponDTO> checkForEmptyFields(CouponDTO coupon) {
@@ -110,9 +141,11 @@ public class CouponService {
         if (coupon.getName() == null || coupon.getName().isBlank()) {
             emptyFields.add("name");
         }
+
         if (coupon.getDescription() == null || coupon.getDescription().isBlank()) {
             emptyFields.add("description");
         }
+
         if (coupon.getExpirationDate() == null) {
             emptyFields.add("expirationDate");
         }

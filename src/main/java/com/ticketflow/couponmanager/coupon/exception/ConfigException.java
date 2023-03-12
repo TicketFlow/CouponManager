@@ -28,7 +28,7 @@ public abstract class ConfigException extends RuntimeException {
                 if (parameter == null)
                     suffix.append("null");
                 else
-                    suffix.append(parameter.toString());
+                    suffix.append(parameter);
             }
         }
 

@@ -1,7 +1,8 @@
 package com.ticketflow.couponmanager.coupon.repository.impl;
 
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
-import com.ticketflow.couponmanager.coupon.enums.Status;
+import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import com.ticketflow.couponmanager.coupon.repository.CustomCouponRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +22,34 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
     private final ReactiveMongoTemplate mongoTemplate;
 
     @Override
-    public Mono<Coupon> updateStatus(String couponId, Status couponStatus) {
-        Query query = new Query(Criteria.where("_id").is(couponId));
-        Update update = new Update().set("status", couponStatus.name());
+    public Mono<Coupon> update(Coupon coupon) {
+        if (coupon.getId() == null) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withNoParams()));
+        }
+
+        Query query = new Query(Criteria.where("_id").is(coupon.getId()));
+
+        Update update = new Update();
+
+        if (coupon.getStatus() != null) {
+            update.set("status", coupon.getStatus());
+        }
+
+        if (coupon.getExpirationDate() != null) {
+            update.set("expirationDate", coupon.getExpirationDate());
+        }
+
+        if (coupon.getDescription() != null) {
+            update.set("description", coupon.getDescription());
+        }
+
+        if (coupon.getDiscountValue() != null) {
+            update.set("discountValue", coupon.getDiscountValue());
+        }
+
+        if (coupon.getDiscountPercentage() != null) {
+            update.set("discountPercentage", coupon.getDiscountPercentage());
+        }
 
         FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true);
 
@@ -70,9 +96,9 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
             query.addCriteria(Criteria.where("code").is(couponFilter.getCode()));
         }
 
-        if (couponFilter.getExpirationDateBetween() != null && couponFilter.getExpirationDateBetween().getStart() != null && couponFilter.getExpirationDateBetween().getEnd() != null) {
-            LocalDateTime startDate = couponFilter.getExpirationDateBetween().getStart();
-            LocalDateTime endDate = couponFilter.getExpirationDateBetween().getEnd();
+        if (couponFilter.getExpirationDateStart() != null && couponFilter.getExpirationDateEnd() != null) {
+            LocalDateTime startDate = couponFilter.getExpirationDateStart();
+            LocalDateTime endDate = couponFilter.getExpirationDateEnd();
 
             query.addCriteria(Criteria.where("expirationDate").gte(startDate).lte(endDate));
         }
