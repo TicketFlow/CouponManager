@@ -2,6 +2,7 @@ package com.ticketflow.couponmanager.coupon.service;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class CouponValidatorService {
 
     public Mono<Void> validateCouponId(String couponId) {
         if (couponId == null) {
-            return Mono.error(new CouponException(CouponErrorCode.COUPON_NOT_FOUND.withParams("null")));
+            return Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId)));
         }
         return Mono.empty();
     }
@@ -49,6 +50,13 @@ public class CouponValidatorService {
         return Mono.just(coupon);
     }
 
+    public Mono<Coupon> returnErrorIfCouponIsAlreadyInactive(Coupon coupon) {
+        if (coupon.isInactive()) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ALREADY_INACTIVE.withParams(coupon.getId())));
+        }
+
+        return Mono.just(coupon);
+    }
 
     private Mono<CouponDTO> ensureExpirationDateIsNotInThePast(CouponDTO couponDTO) {
         if (couponDTO.getExpirationDate().compareTo(LocalDateTime.now()) <= 0) {
@@ -64,10 +72,7 @@ public class CouponValidatorService {
     }
 
     private Mono<CouponDTO> checkIfDiscountFieldIsRequired(CouponDTO couponDTO) {
-        boolean isDiscountValuePresent = couponDTO.getDiscountValue() != null;
-        boolean isDiscountPercentagePresent = couponDTO.getDiscountPercentage() != null;
-
-        if (!isDiscountValuePresent && !isDiscountPercentagePresent) {
+        if (couponDTO.getDiscountValue() == null && couponDTO.getDiscountPercentage() == null) {
             return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
         }
         return Mono.just(couponDTO);

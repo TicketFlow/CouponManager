@@ -2,13 +2,15 @@ package com.ticketflow.couponmanager.coupon.controller.filter;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ticketflow.couponmanager.coupon.enums.Status;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class CouponFilter {
 
     private String id;

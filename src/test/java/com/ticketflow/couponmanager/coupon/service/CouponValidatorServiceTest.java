@@ -4,6 +4,7 @@ package com.ticketflow.couponmanager.coupon.service;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 import com.ticketflow.couponmanager.testbuilder.CouponTestBuilder;
@@ -155,7 +156,7 @@ class CouponValidatorServiceTest {
         String errorMessage = CouponErrorCode.COUPON_NOT_FOUND.getCode();
 
         StepVerifier.create(couponValidatorService.validateCouponId(null))
-                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
                         && throwable.getMessage().contains(errorMessage))
                 .verify();
     }
@@ -252,10 +253,8 @@ class CouponValidatorServiceTest {
 
     @Test
     void shouldReturnCouponWithNoChangesWhenExpirationDateIsInTheFuture() {
-        LocalDateTime futureDate = LocalDateTime.now().plusDays(1);
         Coupon coupon = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
-                .expirationDate(futureDate)
                 .build();
 
         Mono<Coupon> result = couponValidatorService.checkIfCouponIsExpired(coupon);
@@ -263,7 +262,19 @@ class CouponValidatorServiceTest {
         StepVerifier.create(result)
                 .expectNext(coupon)
                 .verifyComplete();
+    }
 
+    @Test
+    void givenValidCoupon_WhenExpirationDateIsInTheFuture_ReturnsCoupon() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        Mono<Coupon> result = couponValidatorService.checkIfCouponIsExpired(coupon);
+
+        StepVerifier.create(result)
+                .expectNext(coupon)
+                .verifyComplete();
     }
 
     @Test
@@ -290,7 +301,6 @@ class CouponValidatorServiceTest {
                 .status(Status.INACTIVE)
                 .build();
 
-
         String errorMessage = CouponErrorCode.INVALID_COUPON.getCode();
 
         StepVerifier.create(couponValidatorService.checkIfCouponIsInactive(inactiveCoupon))
@@ -308,6 +318,34 @@ class CouponValidatorServiceTest {
                 .build();
 
         StepVerifier.create(couponValidatorService.checkIfCouponIsInactive(activeCoupon))
+                .expectNext(activeCoupon)
+                .verifyComplete();
+    }
+
+    @Test
+    void givenInactiveCoupon_whenReturnErrorIfCouponIsAlreadyInactive_shouldReturnCouponException() {
+        Coupon inactiveCoupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
+        String errorMessage = CouponErrorCode.COUPON_ALREADY_INACTIVE.getCode();
+
+        StepVerifier.create(couponValidatorService.returnErrorIfCouponIsAlreadyInactive(inactiveCoupon))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains(inactiveCoupon.getId()))
+                .verify();
+
+    }
+
+    @Test
+    void givenActiveCoupon_whenReturnErrorIfCouponIsAlreadyInactive_shouldReturnCoupon() {
+        Coupon activeCoupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        StepVerifier.create(couponValidatorService.returnErrorIfCouponIsAlreadyInactive(activeCoupon))
                 .expectNext(activeCoupon)
                 .verifyComplete();
     }

@@ -1,6 +1,7 @@
 package com.ticketflow.couponmanager.testbuilder;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
+import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
 
@@ -42,6 +43,18 @@ public class CouponTestBuilder {
 
     public CouponDTO.CouponDTOBuilder buildDTOWithDefaultValues() {
         return CouponDTO.builder()
+                .id(ID)
+                .name(NAME)
+                .description(DESCRIPTION)
+                .discountValue(DISCOUNT_VALUE)
+                .discountPercentage(DISCOUNT_PERCENTAGE)
+                .status(STATUS)
+                .code(CODE)
+                .expirationDate(EXPIRATION_DATE);
+    }
+
+    public CouponFilter.CouponFilterBuilder buildFilterWithDefaultValues() {
+        return CouponFilter.builder()
                 .id(ID)
                 .name(NAME)
                 .description(DESCRIPTION)

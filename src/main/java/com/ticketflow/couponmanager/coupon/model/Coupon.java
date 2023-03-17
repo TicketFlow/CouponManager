@@ -37,6 +37,10 @@ public class Coupon {
 
     private String responsibleUser;
 
+    public void deactivate() {
+        status = Status.INACTIVE;
+    }
+
     public boolean isInactive() {
         return status == Status.INACTIVE;
     }

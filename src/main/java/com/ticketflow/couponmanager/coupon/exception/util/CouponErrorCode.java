@@ -10,7 +10,8 @@ public enum CouponErrorCode {
     COUPON_EXPIRED("CPM_SRVC_6"),
     COUPON_NOT_FOUND("CPM_SRVC_7"),
     INVALID_COUPON("CPM_SRVC_8"),
-    COUPON_ID_REQUIRED("CPM_SRVC_9");
+    COUPON_ID_REQUIRED("CPM_SRVC_9"),
+    COUPON_ALREADY_INACTIVE("CPM_SRVC_10");
 
 
     private final String code;

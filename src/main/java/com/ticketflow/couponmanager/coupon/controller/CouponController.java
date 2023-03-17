@@ -38,4 +38,9 @@ public class CouponController {
         return couponService.updateCoupon(couponDTO);
     }
 
+    @PutMapping("/{id}/deactivate")
+    public Mono<CouponDTO> deactivateCoupon(@PathVariable String id) {
+        return couponService.deactivateCoupon(id);
+    }
+
 }

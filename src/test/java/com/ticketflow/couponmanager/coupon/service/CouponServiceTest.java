@@ -3,7 +3,7 @@ package com.ticketflow.couponmanager.coupon.service;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
-import com.ticketflow.couponmanager.coupon.exception.CouponException;
+import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
@@ -19,7 +19,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 public class CouponServiceTest {
@@ -56,9 +57,7 @@ public class CouponServiceTest {
 
         when(couponRepository.findByFilter(filter)).thenReturn(Flux.just(coupon1, coupon2));
 
-        Flux<CouponDTO> result = couponService.getCoupons(filter);
-
-        StepVerifier.create(result)
+        StepVerifier.create(couponService.getCoupons(filter))
                 .expectNext(CouponTestBuilder.init().buildDTOWithDefaultValues().id("1").build())
                 .expectNext(CouponTestBuilder.init().buildDTOWithDefaultValues().id("2").build())
                 .verifyComplete();
@@ -81,9 +80,7 @@ public class CouponServiceTest {
         when(couponValidatorService.validateCreate(couponDTO)).thenReturn(Mono.just(couponDTO));
         when(couponRepository.save(coupon)).thenReturn(Mono.just(coupon));
 
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
+        StepVerifier.create(couponService.createCoupon(couponDTO))
                 .expectNext(couponDTO)
                 .verifyComplete();
 
@@ -109,9 +106,7 @@ public class CouponServiceTest {
         when(couponValidatorService.validateUpdate(couponDTO)).thenReturn(Mono.just(couponDTO));
         when(couponRepository.update(any(Coupon.class))).thenReturn(Mono.just(updatedCoupon));
 
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
-
-        StepVerifier.create(result)
+        StepVerifier.create(couponService.updateCoupon(couponDTO))
                 .expectNext(couponDTO)
                 .verifyComplete();
 
@@ -129,16 +124,12 @@ public class CouponServiceTest {
         when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.empty());
 
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
+        String errorMessage = CouponErrorCode.COUPON_NOT_FOUND.getCode();
 
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().code()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
-                    return true;
-                })
+        StepVerifier.create(couponService.updateCoupon(couponDTO))
+                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains(couponDTO.getId()))
                 .verify();
 
         verify(couponRepository, never()).update(any());
@@ -161,6 +152,7 @@ public class CouponServiceTest {
                 .expectNext(expectedCouponDTO)
                 .expectComplete()
                 .verify();
+
         verify(couponValidatorService, times(1)).checkIfCouponIsExpired(coupon);
         verify(couponValidatorService, times(1)).checkIfCouponIsInactive(coupon);
 
@@ -173,21 +165,42 @@ public class CouponServiceTest {
 
         when(couponRepository.findById(couponId)).thenReturn(Mono.empty());
 
-        Mono<CouponDTO> result = couponService.checkIfCouponIsValid(couponId);
+        String errorMessage = CouponErrorCode.COUPON_NOT_FOUND.getCode();
 
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(NotFoundException.class);
-                    NotFoundException exception = (NotFoundException) error;
-                    assertThat(exception.getErrorCode().code()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
-                    return true;
-                })
+        StepVerifier.create(couponService.checkIfCouponIsValid(couponId))
+                .expectErrorMatches(throwable -> throwable instanceof NotFoundException
+                        && throwable.getMessage().contains(errorMessage))
                 .verify();
 
         verify(couponValidatorService, never()).checkIfCouponIsExpired(any());
         verify(couponValidatorService, never()).checkIfCouponIsInactive(any());
+    }
 
+    @Test
+    void deactivateCoupon_WhenCouponIsActive_ReturnsCoupon() {
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        Coupon inactiveCoupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.INACTIVE)
+                .build();
+
+        when(couponRepository.findById(anyString())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.returnErrorIfCouponIsAlreadyInactive(any(Coupon.class))).thenReturn(Mono.just(coupon));
+        when(couponRepository.save(any(Coupon.class))).thenReturn(Mono.just(inactiveCoupon));
+
+        StepVerifier.create(couponService.deactivateCoupon(coupon.getId()))
+                .assertNext(couponDTO -> {
+                    assertEquals(coupon.getId(), couponDTO.getId());
+                    assertFalse(couponDTO.isActive());
+                })
+                .verifyComplete();
+
+        verify(couponRepository).findById(coupon.getId());
+        verify(couponValidatorService).returnErrorIfCouponIsAlreadyInactive(coupon);
+        verify(couponRepository).save(inactiveCoupon);
     }
 
 }

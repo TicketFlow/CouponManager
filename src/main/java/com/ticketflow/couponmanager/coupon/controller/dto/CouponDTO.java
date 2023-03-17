@@ -42,7 +42,11 @@ public class CouponDTO {
     private String code;
 
     public void activate() {
-        this.status = Status.ACTIVE;
+        status = Status.ACTIVE;
+    }
+
+    public boolean isActive() {
+        return status == Status.ACTIVE;
     }
 
     @JsonIgnore

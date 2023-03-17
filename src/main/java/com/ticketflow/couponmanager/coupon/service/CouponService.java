@@ -2,7 +2,6 @@ package com.ticketflow.couponmanager.coupon.service;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
-import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
@@ -48,13 +47,12 @@ public class CouponService {
                 .map(couponEntity -> modelMapper.map(couponEntity, CouponDTO.class));
     }
 
-
     public Mono<CouponDTO> updateCoupon(CouponDTO couponDTO) {
         log.info("Updating coupon id: {}", couponDTO.getId());
 
         return couponValidatorService.validateCouponId(couponDTO.getId())
                 .then(couponRepository.findById(couponDTO.getId())
-                        .switchIfEmpty(Mono.error(new CouponException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponDTO.getId()))))
+                        .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponDTO.getId()))))
                         .flatMap(couponEntity -> couponValidatorService.validateUpdate(couponDTO)
                                 .map(coupon -> modelMapper.map(coupon, Coupon.class))
                                 .flatMap(couponRepository::update)
@@ -71,4 +69,15 @@ public class CouponService {
                 .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
     }
 
+    public Mono<CouponDTO> deactivateCoupon(String couponId) {
+        return couponRepository.findById(couponId)
+                .flatMap(couponValidatorService::returnErrorIfCouponIsAlreadyInactive)
+                .flatMap(this::deactivateAndSaveCoupon)
+                .map(savedCoupon -> modelMapper.map(savedCoupon, CouponDTO.class));
+    }
+
+    private Mono<Coupon> deactivateAndSaveCoupon(Coupon coupon) {
+        coupon.deactivate();
+        return couponRepository.save(coupon);
+    }
 }
