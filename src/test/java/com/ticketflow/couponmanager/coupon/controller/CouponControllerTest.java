@@ -2,7 +2,6 @@ package com.ticketflow.couponmanager.coupon.controller;
 
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
-import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.service.CouponService;
 import com.ticketflow.couponmanager.testbuilder.CouponTestBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,19 +18,16 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 
 class CouponControllerTest {
 
+    private final WebTestClient webTestClient;
     @Mock
     private CouponService couponService;
-
     @InjectMocks
-    private  CouponController couponController;
-
-    private final WebTestClient webTestClient;
+    private CouponController couponController;
 
     public CouponControllerTest() {
         MockitoAnnotations.openMocks(this);
@@ -91,7 +87,7 @@ class CouponControllerTest {
                 .buildDTOWithDefaultValues()
                 .build();
 
-        when(couponService.validateCoupon(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponService.checkIfCouponIsValid(coupon.getId())).thenReturn(Mono.just(coupon));
 
         webTestClient.get()
                 .uri("/coupon/{id}/validate", coupon.getId())
@@ -101,7 +97,7 @@ class CouponControllerTest {
                 .expectBody(CouponDTO.class)
                 .isEqualTo(coupon);
 
-        verify(couponService).validateCoupon(coupon.getId());
+        verify(couponService).checkIfCouponIsValid(coupon.getId());
     }
 
     @Test

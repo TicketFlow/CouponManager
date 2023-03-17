@@ -1,12 +1,18 @@
 package com.ticketflow.couponmanager.coupon.controller.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.ticketflow.couponmanager.coupon.enums.Status;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -34,4 +40,27 @@ public class CouponDTO {
     private LocalDateTime expirationDate;
 
     private String code;
+
+    public void activate() {
+        this.status = Status.ACTIVE;
+    }
+
+    @JsonIgnore
+    public List<String> getEmptyFields() {
+        List<String> emptyFields = new ArrayList<>();
+
+        if (name == null || name.isBlank()) {
+            emptyFields.add("name");
+        }
+
+        if (description == null || description.isBlank()) {
+            emptyFields.add("description");
+        }
+
+        if (expirationDate == null) {
+            emptyFields.add("expirationDate");
+        }
+
+        return emptyFields;
+    }
 }

@@ -5,12 +5,11 @@ import org.apache.commons.lang.ArrayUtils;
 
 public abstract class ConfigException extends RuntimeException {
 
+    private static final String ERROR_CODE_NOT_FOUND = "Error code not found.";
     private final ErrorCode errorCode;
 
-    private static final String ERROR_CODE_NOT_FOUND  = "Error code not found.";
-
     public ConfigException(final ErrorCode error) {
-        super(error != null ? error.getCode() : ERROR_CODE_NOT_FOUND);
+        super(error != null ? error.code() : ERROR_CODE_NOT_FOUND);
         this.errorCode = error;
     }
 
@@ -22,9 +21,9 @@ public abstract class ConfigException extends RuntimeException {
     public String getMessage() {
 
         StringBuilder suffix = new StringBuilder();
-        if (errorCode != null && ArrayUtils.isNotEmpty(errorCode.getParameters())) {
+        if (errorCode != null && ArrayUtils.isNotEmpty(errorCode.parameters())) {
             suffix.append(" - ");
-            for (Object parameter : errorCode.getParameters()) {
+            for (Object parameter : errorCode.parameters()) {
                 if (parameter == null)
                     suffix.append("null");
                 else

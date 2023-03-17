@@ -1,11 +1,8 @@
 package com.ticketflow.couponmanager.coupon.service;
 
 
-import com.google.gson.Gson;
-import com.jayway.jsonpath.JsonPath;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
-import com.ticketflow.couponmanager.coupon.enums.Status;
 import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
@@ -18,73 +15,61 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-
-import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 public class CouponServiceTest {
 
+    private CouponService couponService;
+
     @Mock
     private CouponRepository couponRepository;
 
-    private CouponService couponService;
+    @Mock
+    private CouponValidatorService couponValidatorService;
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         ModelMapper modelMapper = new ModelMapper();
-        couponService = new CouponService(couponRepository, modelMapper);
+        couponService = new CouponService(couponRepository, couponValidatorService, modelMapper);
     }
 
     @Test
-    @DisplayName("Get coupons - return coupon list")
-    public void getCoupons_ReturnsAllCoupons() {
+    @DisplayName("Get coupons - return all coupons")
+    void getCoupons_ReturnsAllCoupons() {
         Coupon coupon1 = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
+                .id("1")
                 .build();
 
         Coupon coupon2 = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
                 .id("2")
-                .name("Coupon 2")
-                .description("Description 2")
                 .build();
 
-        CouponDTO couponDTO1 = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+        CouponFilter filter = new CouponFilter();
 
-        CouponDTO couponDTO2 = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .id("2")
-                .name("Coupon 2")
-                .description("Description 2")
-                .build();
+        when(couponRepository.findByFilter(filter)).thenReturn(Flux.just(coupon1, coupon2));
 
-        List<Coupon> coupons = Arrays.asList(coupon1, coupon2);
-
-        when(couponRepository.findByFilter(new CouponFilter())).thenReturn(Flux.fromIterable(coupons));
-
-        Flux<CouponDTO> result = couponService.getCoupons(new CouponFilter());
+        Flux<CouponDTO> result = couponService.getCoupons(filter);
 
         StepVerifier.create(result)
-                .expectNext(couponDTO1)
-                .expectNext(couponDTO2)
+                .expectNext(CouponTestBuilder.init().buildDTOWithDefaultValues().id("1").build())
+                .expectNext(CouponTestBuilder.init().buildDTOWithDefaultValues().id("2").build())
                 .verifyComplete();
+
+        verify(couponRepository).findByFilter(filter);
     }
 
+
     @Test
-    @DisplayName("Create coupon - when the coupon is valid, create a new coupon")
-    public void createCoupon_WithValidCoupon_Succeed() {
+    @DisplayName("Create coupon - when coupon is valid, create new coupon")
+    void createCoupon_WhenCouponIsValid_CreateCoupon() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -93,13 +78,8 @@ public class CouponServiceTest {
                 .buildModelWithDefaultValues()
                 .build();
 
-        Coupon savedCoupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .id("1")
-                .status(Status.ACTIVE) // altera o status para ACTIVE
-                .build();
-
-        when(couponRepository.save(coupon)).thenReturn(Mono.just(savedCoupon));
+        when(couponValidatorService.validateCreate(couponDTO)).thenReturn(Mono.just(couponDTO));
+        when(couponRepository.save(coupon)).thenReturn(Mono.just(coupon));
 
         Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
 
@@ -107,416 +87,107 @@ public class CouponServiceTest {
                 .expectNext(couponDTO)
                 .verifyComplete();
 
-        verify(couponRepository).save(coupon);
+        verify(couponValidatorService, times(1)).validateCreate(couponDTO);
+        verify(couponRepository, times(1)).save(coupon);
     }
 
     @Test
-    @DisplayName("Create coupon - when try to create the coupon with no descount fields, return DISCOUNT_FIELD_MUST_BE_INFORMED")
-    public void createCoupon_WithMissingDiscountFields_ReturnsError() {
-        CouponDTO coupon = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .discountPercentage(null)
-                .discountValue(null)
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(coupon);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to create coupon with expiration date less than actual date, returns EXPIRATION_DATE_LESS_THAN_CURRENT_DATE")
-    void createCoupon_ExpiredDate_ReturnsError() {
+    @DisplayName("Update coupon - when coupon is found and valid, updates coupon")
+    void updateCoupon_WhenCouponIsFoundAndValid_UpdatesCoupon() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
-                .expirationDate(LocalDateTime.now().minusDays(1))
                 .build();
 
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to creat coupon with percentage less than zero, return DISCOUNT_PERCENTAGE_LESS_THAN_ZERO")
-    void createCoupon_DiscountPercentageLessThanZero_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .discountPercentage(-1f)
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to create coupon with discount value less then zero, return DISCOUNT_VALUE_LESS_THAN_ZERO")
-    void createCoupon_DiscountValueLessThanZero_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .discountValue(-1f)
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to create coupon with empty name, return FIELD_CANNOT_BE_EMPTY")
-    void createCoupon_EmptyName_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .name("")
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to save coupon with name containing only spaces, return FIELD_CANNOT_BE_EMPTY")
-    void createCoupon_NameWithSpaces_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .name("   ")
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Crate coupon - when try to create coupon with description empty, returns FIELD_CANNOT_BE_EMPTY")
-    void createCoupon_WithEmptyDescription_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .description("")
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("Create coupon - when try to save description containing only spaces, return FIELD_CANNOT_BE_EMPTY")
-    void createCoupon_DescriptionWithSpaces_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .description("   ")
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
-                    return true;
-                })
-                .verify();
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("create coupon - when try to save coupon with empty expiration date, return FIELD_CANNOT_BE_EMPTY")
-    void createCoupon_EmptyExpirationDate_ReturnsError() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .expirationDate(null)
-                .build();
-
-        Mono<CouponDTO> result = couponService.createCoupon(couponDTO);
-
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException couponException = (CouponException) error;
-                    assertThat(couponException.getErrorCode().getCode()).isEqualTo(CouponErrorCode.FIELD_CANNOT_BE_EMPTY.getCode());
-                    return true;
-                })
-                .verify();
-
-
-        verify(couponRepository, never()).save(any());
-    }
-
-    @Test
-    @DisplayName("validate coupon - when coupon doesn't exists, return COUPON_NOT_FOUND")
-    void validateCoupon_couponNotFound_ReturnsError() {
-        String COUPON_ID = "12345";
-        when(couponRepository.findById(COUPON_ID)).thenReturn(Mono.empty());
-
-        Mono<CouponDTO> result = couponService.validateCoupon(COUPON_ID);
-
-        StepVerifier.create(result)
-            .expectErrorMatches(error -> {
-                assertThat(error).isInstanceOf(NotFoundException.class);
-                NotFoundException exception = (NotFoundException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
-                return true;
-            })
-            .verify();
-    }
-
-    @Test
-    @DisplayName("Validate coupon - when trying to validate a expired coupon, return COUPON_EXPIRED")
-    void validateCoupon_couponExpired_ReturnsError() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .expirationDate(LocalDateTime.now().minusDays(1))
-                .build();
-
-        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
-
-        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
-
-        StepVerifier.create(result)
-            .expectErrorMatches(error -> {
-                assertThat(error).isInstanceOf(CouponException.class);
-                CouponException exception = (CouponException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_EXPIRED.getCode());
-                return true;
-            })
-            .verify();
-    }
-
-    @Test
-    @DisplayName("Validate coupon - when the coupon is disabled, returns INVALID_COUPON")
-    void validateCoupon_invalidCoupon_ReturnsError() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .status(Status.INACTIVE)
-                .build();
-
-        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
-
-        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
-
-        StepVerifier.create(result)
-            .expectErrorMatches(error -> {
-                assertThat(error).isInstanceOf(CouponException.class);
-                CouponException exception = (CouponException) error;
-                assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.INVALID_COUPON.getCode());
-                return true;
-            })
-            .verify();
-    }
-
-    @Test
-    @DisplayName("Validate coupon - Should validate a coupon")
-    void validateCoupon_validCoupon_Succeed() {
-        Coupon coupon = CouponTestBuilder.init()
+        Coupon couponToUpdate = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
                 .build();
 
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+        Coupon updatedCoupon = CouponTestBuilder.init().buildModelWithDefaultValues().build();
 
-        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
-
-        Mono<CouponDTO> result = couponService.validateCoupon(coupon.getId());
-
-        StepVerifier.create(result)
-                .expectNext(couponDTO)
-                .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("Update coupon - when coupon exists and is valid, returns updated coupon")
-    void updateCoupon_WhenCouponExistsAndIsValid_ReturnsUpdatedCoupon() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().status(Status.INACTIVE).build();
-        Coupon coupon = CouponTestBuilder.init().buildModelWithDefaultValues().status(Status.INACTIVE).build();
-
-        when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(coupon));
-        when(couponRepository.update(coupon)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
+        when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(couponToUpdate));
+        when(couponValidatorService.validateUpdate(couponDTO)).thenReturn(Mono.just(couponDTO));
+        when(couponRepository.update(any(Coupon.class))).thenReturn(Mono.just(updatedCoupon));
 
         Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
 
         StepVerifier.create(result)
-                .expectNextMatches(updatedCoupon -> updatedCoupon.getId().equals(couponDTO.getId())
-                        && updatedCoupon.getName().equals(couponDTO.getName())
-                        && updatedCoupon.getDescription().equals(couponDTO.getDescription())
-                        && updatedCoupon.getStatus().equals(couponDTO.getStatus())
-                        && updatedCoupon.getDiscountValue().equals(couponDTO.getDiscountValue())
-                        && updatedCoupon.getDiscountPercentage().equals(couponDTO.getDiscountPercentage())
-                        && updatedCoupon.getCode().equals(couponDTO.getCode())
-                        && updatedCoupon.getExpirationDate().equals(couponDTO.getExpirationDate()))
+                .expectNext(couponDTO)
                 .verifyComplete();
+
+        verify(couponValidatorService, times(1)).validateCouponId(couponDTO.getId());
+        verify(couponValidatorService, times(1)).validateUpdate(couponDTO);
+        verify(couponRepository, times(1)).findById(couponDTO.getId());
+        verify(couponRepository, times(1)).update(any(Coupon.class));
     }
 
     @Test
-    @DisplayName("Update coupon - when coupon does not exist, returns COUPON_NOT_FOUND")
-    void updateCoupon_WhenCouponDoesNotExist_ReturnsCouponNotFoundException() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+    @DisplayName("Given a couponDTO with invalid id, when updateCoupon is called, then it should throw CouponException with COUPON_NOT_FOUND error code")
+    public void givenInvalidId_whenUpdateCoupon_thenThrowCouponExceptionWithCouponNotFoundErrorCode() {
+        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().build();
 
+        when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.empty());
 
         Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
 
-         StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
-                    return true;
-                })
-                .verify();
-    }
-
-    @Test
-    @DisplayName("Update coupon - when status is empty, returns COUPON_STATUS_REQUIRED")
-    void updateCoupon_WhenStatusIsEmpty_ReturnsCouponStatusRequiredException() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .status(null)
-                .build();
-
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
-
-        when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(coupon));
-
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
 
         StepVerifier.create(result)
                 .expectErrorMatches(error -> {
                     assertThat(error).isInstanceOf(CouponException.class);
                     CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_STATUS_REQUIRED.getCode());
+                    assertThat(exception.getErrorCode().code()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
                     return true;
                 })
                 .verify();
+
+        verify(couponRepository, never()).update(any());
     }
 
     @Test
-    @DisplayName("Update coupon - when coupon ID is null, returns COUPON_ID_REQUIRED")
-    void updateCoupon_WhenCouponIdIsNull_ReturnsCouponIdRequiredException() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().id(null).build();
+    @DisplayName("Check if coupon is valid - when coupon is valid, return coupon")
+    void checkIfCouponIsValid_WhenCouponIsValid_ReturnCoupon() {
+        String couponId = "1";
+        Coupon coupon = CouponTestBuilder.init().buildModelWithDefaultValues().id(couponId).build();
+        CouponDTO expectedCouponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().id(couponId).build();
 
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
+        when(couponRepository.findById(couponId)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponIsExpired(coupon)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponIsInactive(coupon)).thenReturn(Mono.just(coupon));
 
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_ID_REQUIRED.getCode());
-                    return true;
-                })
+        Mono<CouponDTO> actualCouponDTO = couponService.checkIfCouponIsValid(couponId);
+
+        StepVerifier.create(actualCouponDTO)
+                .expectNext(expectedCouponDTO)
+                .expectComplete()
                 .verify();
+        verify(couponValidatorService, times(1)).checkIfCouponIsExpired(coupon);
+        verify(couponValidatorService, times(1)).checkIfCouponIsInactive(coupon);
+
     }
 
     @Test
-    @DisplayName("Update coupon - when coupon status is active and expiration date is null, returns COUPON_EXPIRATION_DATE_REQUIRED")
-    void updateCoupon_WhenCouponStatusIsActiveAndExpirationDateIsNull_ReturnsCouponExpirationDateRequiredException() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().expirationDate(null).status(Status.ACTIVE).build();
-        Coupon coupon = CouponTestBuilder.init().buildModelWithDefaultValues().expirationDate(null).status(Status.ACTIVE).build();
+    @DisplayName("Check if coupon is valid - when coupon is not found, returns COUPON_NOT_FOUND")
+    void checkIfCouponIsValid_WhenCouponIsNotFound_ReturnsCouponNotFoundException() {
+        String couponId = "invalid-id";
 
-        when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(coupon));
+        when(couponRepository.findById(couponId)).thenReturn(Mono.empty());
 
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
+        Mono<CouponDTO> result = couponService.checkIfCouponIsValid(couponId);
 
-        StepVerifier.create(result)
-                .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.COUPON_EXPIRATION_DATE_REQUIRED.getCode());
-                    return true;
-                })
-                .verify();
-    }
-
-    @Test
-    @DisplayName("Update coupon - when coupon status is active and expiration date is less than current date, returns EXPIRATION_DATE_LESS_THAN_CURRENT_DATE")
-    void updateCoupon_WhenCouponStatusIsActiveAndExpirationDateIsLessThanCurrentDate_ReturnsCouponExpirationDateLessThanCurrentDateException() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().status(Status.ACTIVE).expirationDate(LocalDateTime.now().minusDays(1)).build();
-        Coupon coupon = CouponTestBuilder.init().buildModelWithDefaultValues().status(Status.ACTIVE).expirationDate(LocalDateTime.now().minusDays(1)).build();
-
-        when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(coupon));
-
-        Mono<CouponDTO> result = couponService.updateCoupon(couponDTO);
 
         StepVerifier.create(result)
                 .expectErrorMatches(error -> {
-                    assertThat(error).isInstanceOf(CouponException.class);
-                    CouponException exception = (CouponException) error;
-                    assertThat(exception.getErrorCode().getCode()).isEqualTo(CouponErrorCode.EXPIRATION_DATE_LESS_THAN_CURRENT_DATE.getCode());
+                    assertThat(error).isInstanceOf(NotFoundException.class);
+                    NotFoundException exception = (NotFoundException) error;
+                    assertThat(exception.getErrorCode().code()).isEqualTo(CouponErrorCode.COUPON_NOT_FOUND.getCode());
                     return true;
                 })
                 .verify();
+
+        verify(couponValidatorService, never()).checkIfCouponIsExpired(any());
+        verify(couponValidatorService, never()).checkIfCouponIsInactive(any());
+
     }
 
 }

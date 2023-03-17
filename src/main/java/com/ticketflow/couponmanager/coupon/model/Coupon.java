@@ -10,11 +10,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(value="coupon")
+@Document(value = "coupon")
 public class Coupon {
 
     @Id
@@ -35,5 +36,13 @@ public class Coupon {
     private LocalDateTime expirationDate;
 
     private String responsibleUser;
+
+    public boolean isInactive() {
+        return status == Status.INACTIVE;
+    }
+
+    public boolean isExpired() {
+        return status == Status.EXPIRED || expirationDate.isBefore(LocalDateTime.now());
+    }
 
 }

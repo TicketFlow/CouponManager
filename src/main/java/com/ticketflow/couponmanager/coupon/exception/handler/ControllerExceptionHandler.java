@@ -26,8 +26,8 @@ public class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorMessage couponHandler(CouponException ex) {
         ErrorMessage error = new ErrorMessage(
-                ex.getErrorCode().getCode(),
-                messageSource.getMessage(ex.getErrorCode().getCode(), ex.getErrorCode().getParameters(), Locale.getDefault())
+                ex.getErrorCode().code(),
+                messageSource.getMessage(ex.getErrorCode().code(), ex.getErrorCode().parameters(), Locale.getDefault())
         );
 
         log.warn(ex.getMessage(), ex);
@@ -38,8 +38,8 @@ public class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ErrorMessage genericHandler(ConfigException ex) {
         ErrorMessage error = new ErrorMessage(
-                ex.getErrorCode().getCode(),
-                messageSource.getMessage(ex.getErrorCode().getCode(), ex.getErrorCode().getParameters(), Locale.getDefault())
+                ex.getErrorCode().code(),
+                messageSource.getMessage(ex.getErrorCode().code(), ex.getErrorCode().parameters(), Locale.getDefault())
         );
         log.warn(ex.getMessage(), ex);
         return error;
