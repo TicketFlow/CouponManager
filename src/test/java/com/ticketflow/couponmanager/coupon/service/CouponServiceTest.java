@@ -68,7 +68,7 @@ class CouponServiceTest {
 
     @Test
     @DisplayName("Create coupon - when coupon is valid, create new coupon")
-    void createCoupon_WhenCouponIsValid_CreateCoupon() {
+    public void createCoupon_WhenCouponIsValid_CreateCoupon() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();

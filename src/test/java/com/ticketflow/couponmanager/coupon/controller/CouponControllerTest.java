@@ -42,7 +42,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Get all coupons should return a list of coupons")
-    void getCoupons_ReturnsListOfCoupons() {
+    public void getCoupons_ReturnsListOfCoupons() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();

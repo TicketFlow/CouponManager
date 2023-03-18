@@ -479,7 +479,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    void validateCouponCode_ShouldThrowCouponException_WhenCouponCodeIsNotUnique() {
+    public void validateCouponCode_ShouldThrowCouponException_WhenCouponCodeIsNotUnique() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
