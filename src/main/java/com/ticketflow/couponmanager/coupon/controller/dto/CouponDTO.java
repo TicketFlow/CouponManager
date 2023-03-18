@@ -71,6 +71,10 @@ public class CouponDTO {
             emptyFields.add("expirationDate");
         }
 
+        if (code == null || code.isBlank()) {
+            emptyFields.add("code");
+        }
+
         return emptyFields;
     }
 }

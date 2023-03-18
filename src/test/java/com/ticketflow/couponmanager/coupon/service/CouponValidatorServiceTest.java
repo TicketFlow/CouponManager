@@ -62,13 +62,49 @@ class CouponValidatorServiceTest {
 
     @Test
     public void validateCreate_ShouldThrowCouponException_WhenNameIsEmpty() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().name("").build();
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .name("")
+                .build();
+
         String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("name").code();
 
         StepVerifier.create(couponValidatorService.validateCreate(couponDTO))
                 .expectErrorMatches(throwable -> throwable instanceof CouponException
                         && throwable.getMessage().contains(errorMessage)
                         && throwable.getMessage().contains("name"))
+                .verify();
+    }
+
+    @Test
+    public void validateCreate_ShouldThrowCouponException_WhenCodeIsNull() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .code(null)
+                .build();
+
+        String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("name").code();
+
+        StepVerifier.create(couponValidatorService.validateCreate(couponDTO))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains("code"))
+                .verify();
+    }
+
+    @Test
+    public void validateCreate_ShouldThrowCouponException_WhenCodeIsEmpty() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .code("")
+                .build();
+
+        String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("name").code();
+
+        StepVerifier.create(couponValidatorService.validateCreate(couponDTO))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains("code"))
                 .verify();
     }
 
