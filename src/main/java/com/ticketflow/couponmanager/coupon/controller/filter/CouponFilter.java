@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.ticketflow.couponmanager.coupon.enums.Status;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -27,14 +27,14 @@ public class CouponFilter {
 
     private String responsibleUser;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
-    private LocalDateTime expirationDate;
+    @JsonFormat(pattern = "dd/MM/yyyy")
+    private LocalDate expirationDate;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
-    private LocalDateTime expirationDateStart;
+    @JsonFormat(pattern = "dd/MM/yyyy")
+    private LocalDate expirationDateStart;
 
-    @JsonFormat(pattern = "dd/MM/yyyy HH:mm")
-    private LocalDateTime expirationDateEnd;
+    @JsonFormat(pattern = "dd/MM/yyyy")
+    private LocalDate expirationDateEnd;
 
     private String code;
 }

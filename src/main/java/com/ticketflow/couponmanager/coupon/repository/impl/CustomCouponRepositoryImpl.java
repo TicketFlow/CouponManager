@@ -14,19 +14,18 @@ import org.springframework.data.mongodb.core.query.Update;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @RequiredArgsConstructor
 public class CustomCouponRepositoryImpl implements CustomCouponRepository {
 
-    private final ReactiveMongoTemplate mongoTemplate;
-
     private static final String EXPIRATION_DATE_STRING = "expirationDate";
+    private final ReactiveMongoTemplate mongoTemplate;
 
     @Override
     public Mono<Coupon> update(Coupon coupon) {
         if (coupon.getId() == null) {
-            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withNoParams()));
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withParams()));
         }
 
         Query query = new Query(Criteria.where("_id").is(coupon.getId()));
@@ -61,7 +60,7 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
     @Override
     public Mono<Coupon> updateUsage(Coupon coupon) {
         if (coupon.getId() == null) {
-            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withNoParams()));
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withParams()));
         }
 
         Query query = new Query(Criteria.where("_id").is(coupon.getId()));
@@ -115,20 +114,27 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
             query.addCriteria(Criteria.where("responsibleUser").is(couponFilter.getResponsibleUser()));
         }
 
-        if (couponFilter.getExpirationDate() != null) {
-            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).is(couponFilter.getExpirationDate()));
-        }
-
         if (couponFilter.getCode() != null) {
             query.addCriteria(Criteria.where("code").is(couponFilter.getCode()));
         }
 
-        if (couponFilter.getExpirationDateStart() != null && couponFilter.getExpirationDateEnd() != null) {
-            LocalDateTime startDate = couponFilter.getExpirationDateStart();
-            LocalDateTime endDate = couponFilter.getExpirationDateEnd();
-
-            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).gte(startDate).lte(endDate));
+        if (couponFilter.getExpirationDate() != null) {
+            LocalDate expirationDate = couponFilter.getExpirationDate();
+            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).gte(expirationDate.atStartOfDay()).lt(expirationDate.plusDays(1).atStartOfDay()));
         }
+
+        if (couponFilter.getExpirationDateStart() != null && couponFilter.getExpirationDateEnd() != null) {
+            LocalDate startDate = couponFilter.getExpirationDateStart();
+            LocalDate endDate = couponFilter.getExpirationDateEnd();
+            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).gte(startDate.atStartOfDay()).lt(endDate.plusDays(1).atStartOfDay()));
+        } else if (couponFilter.getExpirationDateStart() != null) {
+            LocalDate startDate = couponFilter.getExpirationDateStart();
+            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).gte(startDate.atStartOfDay()));
+        } else if (couponFilter.getExpirationDateEnd() != null) {
+            LocalDate endDate = couponFilter.getExpirationDateEnd();
+            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).lt(endDate.plusDays(1).atStartOfDay()));
+        }
+
 
         return mongoTemplate.find(query, Coupon.class);
     }

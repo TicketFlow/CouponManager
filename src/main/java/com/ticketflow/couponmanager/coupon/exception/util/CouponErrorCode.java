@@ -1,5 +1,10 @@
 package com.ticketflow.couponmanager.coupon.exception.util;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum CouponErrorCode {
 
     DISCOUNT_FIELD_MUST_BE_INFORMED("CPM_ERR_1"),
@@ -18,19 +23,7 @@ public enum CouponErrorCode {
 
     private final String code;
 
-    CouponErrorCode(final String code) {
-        this.code = code;
-    }
-
-    public ErrorCode withNoParams() {
-        return withParams();
-    }
-
     public ErrorCode withParams(Object... parameters) {
         return new ErrorCode(this.code, parameters);
-    }
-
-    public String getCode() {
-        return code;
     }
 }

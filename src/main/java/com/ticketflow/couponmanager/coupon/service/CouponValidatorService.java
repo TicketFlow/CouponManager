@@ -33,7 +33,7 @@ public class CouponValidatorService {
 
     public Mono<Void> validateCouponId(String couponId) {
         if (couponId == null) {
-            return Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withNoParams()));
+            return Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams()));
         }
         return Mono.empty();
     }
@@ -87,21 +87,21 @@ public class CouponValidatorService {
 
     private Mono<CouponDTO> checkIfDiscountFieldIsRequired(CouponDTO couponDTO) {
         if (couponDTO.getDiscountValue() == null && couponDTO.getDiscountPercentage() == null) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withNoParams()));
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_FIELD_MUST_BE_INFORMED.withParams()));
         }
         return Mono.just(couponDTO);
     }
 
     private Mono<CouponDTO> validateDiscountPercentage(CouponDTO couponDTO) {
         if (couponDTO.getDiscountPercentage() != null && couponDTO.getDiscountPercentage().compareTo(0f) < 0) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withNoParams()));
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_PERCENTAGE_LESS_THAN_ZERO.withParams()));
         }
         return Mono.just(couponDTO);
     }
 
     private Mono<CouponDTO> validateDiscountValue(CouponDTO couponDTO) {
         if (couponDTO.getDiscountValue() != null && couponDTO.getDiscountValue().compareTo(0f) < 0) {
-            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withNoParams()));
+            return Mono.error(new CouponException(CouponErrorCode.DISCOUNT_VALUE_LESS_THAN_ZERO.withParams()));
         }
         return Mono.just(couponDTO);
     }
