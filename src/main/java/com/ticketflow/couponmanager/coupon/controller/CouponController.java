@@ -23,10 +23,12 @@ public class CouponController {
         return couponService.getCoupons(couponFilter);
     }
 
+
     @PostMapping
     public Mono<CouponDTO> createCoupon(@RequestBody CouponDTO coupon) {
         return couponService.createCoupon(coupon);
     }
+
 
     @GetMapping("/{id}/validate")
     public Mono<CouponDTO> validateCoupon(@PathVariable String id) {
