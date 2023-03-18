@@ -99,7 +99,9 @@ public class CouponServiceTest {
                 .buildModelWithDefaultValues()
                 .build();
 
-        Coupon updatedCoupon = CouponTestBuilder.init().buildModelWithDefaultValues().build();
+        Coupon updatedCoupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
 
         when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(couponToUpdate));
@@ -119,7 +121,9 @@ public class CouponServiceTest {
     @Test
     @DisplayName("Given a couponDTO with invalid id, when updateCoupon is called, then it should throw CouponException with COUPON_NOT_FOUND error code")
     public void givenInvalidId_whenUpdateCoupon_thenThrowCouponExceptionWithCouponNotFoundErrorCode() {
-        CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().build();
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
 
         when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.empty());
@@ -138,15 +142,20 @@ public class CouponServiceTest {
     @Test
     @DisplayName("Check if coupon is valid - when coupon is valid, return coupon")
     void checkIfCouponIsValid_WhenCouponIsValid_ReturnCoupon() {
-        String couponId = "1";
-        Coupon coupon = CouponTestBuilder.init().buildModelWithDefaultValues().id(couponId).build();
-        CouponDTO expectedCouponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().id(couponId).build();
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
 
-        when(couponRepository.findById(couponId)).thenReturn(Mono.just(coupon));
+        CouponDTO expectedCouponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
         when(couponValidatorService.checkIfCouponIsExpired(coupon)).thenReturn(Mono.just(coupon));
         when(couponValidatorService.checkIfCouponIsInactive(coupon)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponHaveAvailableUses(coupon)).thenReturn(Mono.just(coupon));
 
-        Mono<CouponDTO> actualCouponDTO = couponService.checkIfCouponIsValid(couponId);
+        Mono<CouponDTO> actualCouponDTO = couponService.validateCoupon(coupon.getId());
 
         StepVerifier.create(actualCouponDTO)
                 .expectNext(expectedCouponDTO)
@@ -167,7 +176,7 @@ public class CouponServiceTest {
 
         String errorMessage = CouponErrorCode.COUPON_NOT_FOUND.getCode();
 
-        StepVerifier.create(couponService.checkIfCouponIsValid(couponId))
+        StepVerifier.create(couponService.validateCoupon(couponId))
                 .expectErrorMatches(throwable -> throwable instanceof NotFoundException
                         && throwable.getMessage().contains(errorMessage))
                 .verify();
@@ -202,5 +211,70 @@ public class CouponServiceTest {
         verify(couponValidatorService).returnErrorIfCouponIsAlreadyInactive(coupon);
         verify(couponRepository).save(inactiveCoupon);
     }
+
+    @Test
+    void validateAndDecreaseAvailableCoupons_WhenCouponIsValid_UpdatesCouponUsage() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .useLimit(5)
+                .build();
+
+        CouponDTO expectedCouponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .useLimit(4)
+                .build();
+
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .useLimit(5)
+                .build();
+
+        Coupon couponUpdated = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .useLimit(4)
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponIsExpired(coupon)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponIsInactive(coupon)).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCouponHaveAvailableUses(coupon)).thenReturn(Mono.just(coupon));
+        when(couponRepository.updateUsage(any(Coupon.class))).thenReturn(Mono.just(couponUpdated));
+
+        StepVerifier.create(couponService.validateAndDecreaseAvailableCoupons(couponDTO.getId()))
+                .expectNext(expectedCouponDTO)
+                .expectComplete()
+                .verify();
+
+        verify(couponValidatorService, times(1)).checkIfCouponIsExpired(coupon);
+        verify(couponValidatorService, times(1)).checkIfCouponIsInactive(coupon);
+        verify(couponValidatorService, times(1)).checkIfCouponHaveAvailableUses(coupon);
+    }
+
+
+//    @Test
+//    void updateCouponUsage_WhenGivenValidCouponDTO_UpdatesCouponUsage() {
+//        CouponDTO validCouponDTO = CouponTestBuilder.init()
+//                .buildDTOWithDefaultValues()
+//                .useLimit(5)
+//                .build();
+//
+//        Coupon validCoupon = CouponTestBuilder.init()
+//                .buildModelWithDefaultValues()
+//                .useLimit(5)
+//                .build();
+//
+//        when(couponRepository.findById(validCoupon.getId())).thenReturn(Mono.just(validCoupon));
+//        when(couponValidatorService.checkIfCouponIsExpired(validCoupon)).thenReturn(Mono.just(validCoupon));
+//        when(couponValidatorService.checkIfCouponIsInactive(validCoupon)).thenReturn(Mono.just(validCoupon));
+//        when(couponValidatorService.checkIfCouponHaveAvailableUses(validCoupon)).thenReturn(Mono.just(validCoupon));
+//        when(couponRepository.updateUsage(validCoupon)).thenReturn(Mono.just(validCoupon));
+//
+//        StepVerifier.create(couponService.validateAndDecreaseAvailableCoupons(validCouponDTO.getId()))
+//                .expectNext(validCouponDTO)
+//                .expectComplete()
+//                .verify();
+//
+//        verify(couponRepository, times(1)).updateUsage(validCoupon);
+//    }
 
 }

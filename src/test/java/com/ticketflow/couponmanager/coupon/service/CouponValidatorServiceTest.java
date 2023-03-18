@@ -278,10 +278,28 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    void shouldThrowCouponExceptionWhenExpirationDateIsInThePast() {
+    void givenInvalidCoupon_WithExpirationDateInThePast_shouldThrowCouponException() {
         LocalDateTime pastDate = LocalDateTime.now().minusDays(1);
         Coupon coupon = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
+                .expirationDate(pastDate)
+                .build();
+
+        String errorMessage = CouponErrorCode.COUPON_EXPIRED.getCode();
+
+        StepVerifier.create(couponValidatorService.checkIfCouponIsExpired(coupon))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains(coupon.getId()))
+                .verify();
+    }
+
+    @Test
+    void givenInvalidCoupon_WithStatusExpired_shouldThrowCouponException() {
+        LocalDateTime pastDate = LocalDateTime.now().minusDays(1);
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .status(Status.EXPIRED)
                 .expirationDate(pastDate)
                 .build();
 
@@ -348,5 +366,56 @@ class CouponValidatorServiceTest {
         StepVerifier.create(couponValidatorService.returnErrorIfCouponIsAlreadyInactive(activeCoupon))
                 .expectNext(activeCoupon)
                 .verifyComplete();
+    }
+
+    @Test
+    void checkIfCouponHaveAvailableUses_WhenCouponHasAvailableUses_ReturnsCoupon() {
+        Coupon couponWithAvailableUses = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .useLimit(5)
+                .build();
+
+        Mono<Coupon> result = couponValidatorService.checkIfCouponHaveAvailableUses(couponWithAvailableUses);
+
+        StepVerifier.create(result)
+                .expectNext(couponWithAvailableUses)
+                .expectComplete()
+                .verify();
+    }
+
+    @Test
+    void checkIfCouponHaveAvailableUses_WhenCouponHasNoAvailableUses_ThrowsCouponException() {
+        Coupon couponWithNoAvailableUses = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .useLimit(0)
+                .build();
+
+        Mono<Coupon> result = couponValidatorService.checkIfCouponHaveAvailableUses(couponWithNoAvailableUses);
+
+        String errorMessage = CouponErrorCode.COUPON_USAGE_LIMIT_REACHED.getCode();
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof CouponException &&
+                        throwable.getMessage().contains(errorMessage) &&
+                        throwable.getMessage().contains(couponWithNoAvailableUses.getId()))
+                .verify();
+    }
+
+    @Test
+    void checkIfCouponHaveAvailableUses_WhenUseLimitIsNull_ThrowsCouponException() {
+        Coupon couponWithNoAvailableUses = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .useLimit(null)
+                .build();
+
+        Mono<Coupon> result = couponValidatorService.checkIfCouponHaveAvailableUses(couponWithNoAvailableUses);
+
+        String errorMessage = CouponErrorCode.COUPON_USAGE_LIMIT_REACHED.getCode();
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof CouponException &&
+                        throwable.getMessage().contains(errorMessage) &&
+                        throwable.getMessage().contains(couponWithNoAvailableUses.getId()))
+                .verify();
     }
 }

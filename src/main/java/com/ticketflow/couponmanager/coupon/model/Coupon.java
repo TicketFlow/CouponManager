@@ -37,6 +37,8 @@ public class Coupon {
 
     private String responsibleUser;
 
+    private Integer useLimit;
+
     public void deactivate() {
         status = Status.INACTIVE;
     }
@@ -47,6 +49,13 @@ public class Coupon {
 
     public boolean isExpired() {
         return status == Status.EXPIRED || expirationDate.isBefore(LocalDateTime.now());
+    }
+
+    public boolean hasAvailableUses() {
+        if (useLimit == null) {
+            return false;
+        }
+        return useLimit > 0;
     }
 
 }

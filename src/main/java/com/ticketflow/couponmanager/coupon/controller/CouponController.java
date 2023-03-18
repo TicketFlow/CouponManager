@@ -30,7 +30,12 @@ public class CouponController {
 
     @GetMapping("/{id}/validate")
     public Mono<CouponDTO> validateCoupon(@PathVariable String id) {
-        return couponService.checkIfCouponIsValid(id);
+        return couponService.validateCoupon(id);
+    }
+
+    @PutMapping("/{id}/redeem")
+    public Mono<CouponDTO> redeemCoupon(@PathVariable String id) {
+        return couponService.validateAndDecreaseAvailableCoupons(id);
     }
 
     @PutMapping

@@ -34,7 +34,7 @@ public class CouponService {
         log.info("Getting coupons");
 
         return couponRepository.findByFilter(couponFilter)
-                .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
+                .map(this::toCouponDTO);
     }
 
     public Mono<CouponDTO> createCoupon(CouponDTO coupon) {
@@ -42,42 +42,71 @@ public class CouponService {
 
         return couponValidatorService.validateCreate(coupon)
                 .doOnNext(CouponDTO::activate)
-                .map(couponDTO -> modelMapper.map(couponDTO, Coupon.class))
+                .map(this::toCoupon)
                 .flatMap(couponRepository::save)
-                .map(couponEntity -> modelMapper.map(couponEntity, CouponDTO.class));
+                .map(this::toCouponDTO);
     }
+
 
     public Mono<CouponDTO> updateCoupon(CouponDTO couponDTO) {
         log.info("Updating coupon id: {}", couponDTO.getId());
 
         return couponValidatorService.validateCouponId(couponDTO.getId())
-                .then(couponRepository.findById(couponDTO.getId())
-                        .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponDTO.getId()))))
-                        .flatMap(couponEntity -> couponValidatorService.validateUpdate(couponDTO)
-                                .map(coupon -> modelMapper.map(coupon, Coupon.class))
-                                .flatMap(couponRepository::update)
-                                .map(updatedCoupon -> modelMapper.map(updatedCoupon, CouponDTO.class))));
+                .then(findCouponById(couponDTO.getId()))
+                .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponDTO.getId()))))
+                .flatMap(couponEntity -> couponValidatorService.validateUpdate(couponDTO))
+                .map(this::toCoupon)
+                .flatMap(couponRepository::update)
+                .map(this::toCouponDTO);
     }
 
-    public Mono<CouponDTO> checkIfCouponIsValid(String couponId) {
+    public Mono<CouponDTO> validateAndDecreaseAvailableCoupons(String couponId) {
+        return validateCoupon(couponId)
+                .flatMap(couponDTO -> {
+                    couponDTO.decrementUseLimit();
+                    return updateCouponUsage(couponDTO);
+                });
+    }
+
+    private Mono<CouponDTO> updateCouponUsage(CouponDTO couponDTO) {
+        return Mono.just(couponDTO)
+                .map(this::toCoupon)
+                .flatMap(couponRepository::updateUsage)
+                .map(this::toCouponDTO);
+    }
+
+    public Mono<CouponDTO> validateCoupon(String couponId) {
         log.info("Validate coupon id: {}", couponId);
 
-        return couponRepository.findById(couponId)
-                .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId))))
+        return findCouponById(couponId)
                 .flatMap(couponValidatorService::checkIfCouponIsExpired)
                 .flatMap(couponValidatorService::checkIfCouponIsInactive)
-                .map(coupon -> modelMapper.map(coupon, CouponDTO.class));
+                .flatMap(couponValidatorService::checkIfCouponHaveAvailableUses)
+                .map(this::toCouponDTO);
     }
 
     public Mono<CouponDTO> deactivateCoupon(String couponId) {
-        return couponRepository.findById(couponId)
+        return findCouponById(couponId)
                 .flatMap(couponValidatorService::returnErrorIfCouponIsAlreadyInactive)
                 .flatMap(this::deactivateAndSaveCoupon)
-                .map(savedCoupon -> modelMapper.map(savedCoupon, CouponDTO.class));
+                .map(this::toCouponDTO);
+    }
+
+    private Mono<Coupon> findCouponById(String couponId) {
+        return couponRepository.findById(couponId)
+                .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId))));
     }
 
     private Mono<Coupon> deactivateAndSaveCoupon(Coupon coupon) {
         coupon.deactivate();
         return couponRepository.save(coupon);
+    }
+
+    private CouponDTO toCouponDTO(Coupon coupon) {
+        return modelMapper.map(coupon, CouponDTO.class);
+    }
+
+    private Coupon toCoupon(CouponDTO couponDTO) {
+        return modelMapper.map(couponDTO, Coupon.class);
     }
 }

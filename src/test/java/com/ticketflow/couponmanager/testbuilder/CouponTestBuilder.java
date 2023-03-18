@@ -22,6 +22,7 @@ public class CouponTestBuilder {
     private static final Status STATUS = Status.ACTIVE;
 
     private static final String CODE = "12345abcdef";
+    private static final int USE_LIMIT = 10;
 
     private static final LocalDateTime EXPIRATION_DATE = LocalDateTime.now().plusDays(5).withSecond(0).withNano(0);
 
@@ -38,7 +39,8 @@ public class CouponTestBuilder {
                 .discountPercentage(DISCOUNT_PERCENTAGE)
                 .status(STATUS)
                 .code(CODE)
-                .expirationDate(EXPIRATION_DATE);
+                .expirationDate(EXPIRATION_DATE)
+                .useLimit(USE_LIMIT);
     }
 
     public CouponDTO.CouponDTOBuilder buildDTOWithDefaultValues() {
@@ -50,7 +52,8 @@ public class CouponTestBuilder {
                 .discountPercentage(DISCOUNT_PERCENTAGE)
                 .status(STATUS)
                 .code(CODE)
-                .expirationDate(EXPIRATION_DATE);
+                .expirationDate(EXPIRATION_DATE)
+                .useLimit(USE_LIMIT);
     }
 
     public CouponFilter.CouponFilterBuilder buildFilterWithDefaultValues() {

@@ -41,12 +41,18 @@ public class CouponDTO {
 
     private String code;
 
+    private int useLimit;
+
     public void activate() {
         status = Status.ACTIVE;
     }
 
     public boolean isActive() {
         return status == Status.ACTIVE;
+    }
+
+    public void decrementUseLimit() {
+        useLimit = useLimit - 1;
     }
 
     @JsonIgnore

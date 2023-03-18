@@ -57,6 +57,25 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
     }
 
     @Override
+    public Mono<Coupon> updateUsage(Coupon coupon) {
+        if (coupon.getId() == null) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withNoParams()));
+        }
+
+        Query query = new Query(Criteria.where("_id").is(coupon.getId()));
+
+        Update update = new Update();
+
+        if (coupon.getUseLimit() != null) {
+            update.set("useLimit", coupon.getUseLimit());
+        }
+
+        FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true);
+
+        return mongoTemplate.findAndModify(query, update, options, Coupon.class);
+    }
+
+    @Override
     public Flux<Coupon> findByFilter(CouponFilter couponFilter) {
         Query query = new Query();
 

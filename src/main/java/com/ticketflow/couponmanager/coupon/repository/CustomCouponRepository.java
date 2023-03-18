@@ -11,4 +11,6 @@ public interface CustomCouponRepository {
 
     Flux<Coupon> findByFilter(CouponFilter couponFilter);
 
+    Mono<Coupon> updateUsage(Coupon coupon);
+
 }

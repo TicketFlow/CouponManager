@@ -26,7 +26,7 @@ public class CouponValidatorService {
 
     public Mono<Void> validateCouponId(String couponId) {
         if (couponId == null) {
-            return Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId)));
+            return Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withNoParams()));
         }
         return Mono.empty();
     }
@@ -46,6 +46,13 @@ public class CouponValidatorService {
     public Mono<Coupon> checkIfCouponIsInactive(Coupon coupon) {
         if (coupon.isInactive()) {
             return Mono.error(new CouponException(CouponErrorCode.INVALID_COUPON.withParams(coupon.getId())));
+        }
+        return Mono.just(coupon);
+    }
+
+    public Mono<Coupon> checkIfCouponHaveAvailableUses(Coupon coupon) {
+        if (!coupon.hasAvailableUses()) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_USAGE_LIMIT_REACHED.withParams(coupon.getId())));
         }
         return Mono.just(coupon);
     }

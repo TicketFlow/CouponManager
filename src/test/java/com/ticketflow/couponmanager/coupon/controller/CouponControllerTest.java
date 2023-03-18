@@ -124,7 +124,7 @@ class CouponControllerTest {
                 .buildDTOWithDefaultValues()
                 .build();
 
-        when(couponService.checkIfCouponIsValid(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponService.validateCoupon(coupon.getId())).thenReturn(Mono.just(coupon));
 
         webTestClient.get()
                 .uri("/coupon/{id}/validate", coupon.getId())
@@ -134,7 +134,7 @@ class CouponControllerTest {
                 .expectBody(CouponDTO.class)
                 .isEqualTo(coupon);
 
-        verify(couponService).checkIfCouponIsValid(coupon.getId());
+        verify(couponService).validateCoupon(coupon.getId());
     }
 
     @Test
@@ -170,6 +170,23 @@ class CouponControllerTest {
 
         webTestClient.put()
                 .uri("/coupon/{id}/deactivate", couponDTO.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(CouponDTO.class)
+                .isEqualTo(couponDTO);
+    }
+
+    @Test
+    @DisplayName("Should decrease coupon usage limit")
+    void redeemCoupon_returnsCoupon() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        when(couponService.validateAndDecreaseAvailableCoupons(couponDTO.getId())).thenReturn(Mono.just(couponDTO));
+
+        webTestClient.put()
+                .uri("/coupon/{id}/redeem", couponDTO.getId())
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CouponDTO.class)
