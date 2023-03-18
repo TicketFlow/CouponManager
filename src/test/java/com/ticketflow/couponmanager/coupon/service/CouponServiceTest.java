@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
-public class CouponServiceTest {
+class CouponServiceTest {
 
     private CouponService couponService;
 
@@ -121,7 +121,7 @@ public class CouponServiceTest {
 
     @Test
     @DisplayName("Given a couponDTO with invalid id, when updateCoupon is called, then it should throw CouponException with COUPON_NOT_FOUND error code")
-    public void givenInvalidId_whenUpdateCoupon_thenThrowCouponExceptionWithCouponNotFoundErrorCode() {
+    void givenInvalidId_whenUpdateCoupon_thenThrowCouponExceptionWithCouponNotFoundErrorCode() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -250,32 +250,4 @@ public class CouponServiceTest {
         verify(couponValidatorService, times(1)).checkIfCouponIsInactive(coupon);
         verify(couponValidatorService, times(1)).checkIfCouponHaveAvailableUses(coupon);
     }
-
-
-//    @Test
-//    void updateCouponUsage_WhenGivenValidCouponDTO_UpdatesCouponUsage() {
-//        CouponDTO validCouponDTO = CouponTestBuilder.init()
-//                .buildDTOWithDefaultValues()
-//                .useLimit(5)
-//                .build();
-//
-//        Coupon validCoupon = CouponTestBuilder.init()
-//                .buildModelWithDefaultValues()
-//                .useLimit(5)
-//                .build();
-//
-//        when(couponRepository.findById(validCoupon.getId())).thenReturn(Mono.just(validCoupon));
-//        when(couponValidatorService.checkIfCouponIsExpired(validCoupon)).thenReturn(Mono.just(validCoupon));
-//        when(couponValidatorService.checkIfCouponIsInactive(validCoupon)).thenReturn(Mono.just(validCoupon));
-//        when(couponValidatorService.checkIfCouponHaveAvailableUses(validCoupon)).thenReturn(Mono.just(validCoupon));
-//        when(couponRepository.updateUsage(validCoupon)).thenReturn(Mono.just(validCoupon));
-//
-//        StepVerifier.create(couponService.validateAndDecreaseAvailableCoupons(validCouponDTO.getId()))
-//                .expectNext(validCouponDTO)
-//                .expectComplete()
-//                .verify();
-//
-//        verify(couponRepository, times(1)).updateUsage(validCoupon);
-//    }
-
 }

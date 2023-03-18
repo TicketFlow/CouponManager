@@ -42,7 +42,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Get all coupons should return a list of coupons")
-    public void getCoupons_ReturnsListOfCoupons() {
+    void getCoupons_ReturnsListOfCoupons() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -64,7 +64,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Get all coupons should return a list of coupons")
-    public void getCoupons_withFilter_ReturnsListOfCoupons() {
+    void getCoupons_withFilter_ReturnsListOfCoupons() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -100,7 +100,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Creating a coupon should return the created coupon")
-    public void createCoupon_ReturnsCreatedCoupon() {
+    void createCoupon_ReturnsCreatedCoupon() {
         CouponDTO coupon = CouponTestBuilder.init().buildDTOWithDefaultValues().build();
         when(couponService.createCoupon(coupon)).thenReturn(Mono.just(coupon));
 
@@ -119,7 +119,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Validating a coupon should return the validated coupon")
-    public void validateCoupon_ReturnsValidatedCoupon() {
+    void validateCoupon_ReturnsValidatedCoupon() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -139,7 +139,7 @@ class CouponControllerTest {
 
     @Test
     @DisplayName("Should return updated coupon")
-    public void updateCoupon_ReturnsUpdatedCoupon() {
+    void updateCoupon_ReturnsUpdatedCoupon() {
         CouponDTO coupon = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();

@@ -8,7 +8,7 @@ public abstract class ConfigException extends RuntimeException {
     private static final String ERROR_CODE_NOT_FOUND = "Error code not found.";
     private final ErrorCode errorCode;
 
-    public ConfigException(final ErrorCode error) {
+    protected ConfigException(final ErrorCode error) {
         super(error != null ? error.code() : ERROR_CODE_NOT_FOUND);
         this.errorCode = error;
     }

@@ -34,7 +34,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldReturnCouponDTO_WhenAllFieldsAreFilledAndExpirationDateIsValid() {
+    void validateCreate_ShouldReturnCouponDTO_WhenAllFieldsAreFilledAndExpirationDateIsValid() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .build();
@@ -45,7 +45,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenNameIsNull() {
+    void validateCreate_ShouldThrowCouponException_WhenNameIsNull() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .name(null)
@@ -61,7 +61,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenNameIsEmpty() {
+    void validateCreate_ShouldThrowCouponException_WhenNameIsEmpty() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .name("")
@@ -77,7 +77,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenCodeIsNull() {
+    void validateCreate_ShouldThrowCouponException_WhenCodeIsNull() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .code(null)
@@ -93,7 +93,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenCodeIsEmpty() {
+    void validateCreate_ShouldThrowCouponException_WhenCodeIsEmpty() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .code("")
@@ -109,7 +109,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenDescriptionIsNull() {
+    void validateCreate_ShouldThrowCouponException_WhenDescriptionIsNull() {
         CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().description(null).build();
         String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("description").code();
 
@@ -121,7 +121,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenDescriptionIsEmpty() {
+    void validateCreate_ShouldThrowCouponException_WhenDescriptionIsEmpty() {
         CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().description("").build();
         String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("description").code();
 
@@ -133,7 +133,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenExpirationDateIsNull() {
+    void validateCreate_ShouldThrowCouponException_WhenExpirationDateIsNull() {
         CouponDTO couponDTO = CouponTestBuilder.init().buildDTOWithDefaultValues().expirationDate(null).build();
         String errorMessage = CouponErrorCode.FIELD_CANNOT_BE_EMPTY.withParams("expirationDate").code();
 
@@ -145,7 +145,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_WhenDiscountValueAndDiscountPercentageAreNull() {
+    void validateCreate_ShouldThrowCouponException_WhenDiscountValueAndDiscountPercentageAreNull() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountValue(null)
@@ -161,7 +161,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_whenExpirationDateIsLessThanCurrendDate() {
+    void validateCreate_ShouldThrowCouponException_whenExpirationDateIsLessThanCurrendDate() {
         LocalDateTime expirationDateInThePast = LocalDateTime.now().minusDays(1);
 
         CouponDTO invalidCouponDTO = CouponTestBuilder.init()
@@ -179,7 +179,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCreate_ShouldThrowCouponException_whenCouponDiscountPercentageIsLessThanZero() {
+    void validateCreate_ShouldThrowCouponException_whenCouponDiscountPercentageIsLessThanZero() {
         CouponDTO invalidCouponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountPercentage(-1f)
@@ -195,7 +195,7 @@ class CouponValidatorServiceTest {
 
 
     @Test
-    public void validateCouponId_ShouldThrowCouponException_WhenCouponIdIsNull() {
+    void validateCouponId_ShouldThrowCouponException_WhenCouponIdIsNull() {
         String errorMessage = CouponErrorCode.COUPON_NOT_FOUND.getCode();
 
         StepVerifier.create(couponValidatorService.validateCouponId(null))
@@ -205,7 +205,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateCouponId_WhenIdIsValid_ValidatesCouponId() {
+    void validateCouponId_WhenIdIsValid_ValidatesCouponId() {
         String couponId = "1";
 
         Mono<Void> result = couponValidatorService.validateCouponId(couponId);
@@ -217,7 +217,7 @@ class CouponValidatorServiceTest {
 
 
     @Test
-    public void validateUpdate_ShouldReturnCouponDTO_WhenDiscountPercentageIsZero() {
+    void validateUpdate_ShouldReturnCouponDTO_WhenDiscountPercentageIsZero() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountPercentage(0F)
@@ -229,7 +229,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateUpdate_ShouldThrowCouponException_WhenDiscountPercentageIsNegative() {
+    void validateUpdate_ShouldThrowCouponException_WhenDiscountPercentageIsNegative() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountPercentage(-1F)
@@ -244,7 +244,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateUpdate_ShouldThrowCouponException_WhenDiscountValueIsNegative() {
+    void validateUpdate_ShouldThrowCouponException_WhenDiscountValueIsNegative() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountValue(-1F)
@@ -259,7 +259,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateUpdate_ShouldReturnCouponDTO_whenDiscountValueIsZero() {
+    void validateUpdate_ShouldReturnCouponDTO_whenDiscountValueIsZero() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountValue(0F)
@@ -271,7 +271,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateUpdate_ShouldReturnCouponDTO_WhenHaveOnlyDiscountPercentage() {
+    void validateUpdate_ShouldReturnCouponDTO_WhenHaveOnlyDiscountPercentage() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountValue(null)
@@ -283,7 +283,7 @@ class CouponValidatorServiceTest {
     }
 
     @Test
-    public void validateUpdate_ReturnCouponDTO_WhenDiscountPercentageIsNull() {
+    void validateUpdate_ReturnCouponDTO_WhenDiscountPercentageIsNull() {
         CouponDTO couponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
                 .discountPercentage(null)
