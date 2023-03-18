@@ -7,23 +7,30 @@ import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
+import com.ticketflow.couponmanager.coupon.repository.CouponRepository;
 import com.ticketflow.couponmanager.testbuilder.CouponTestBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
 
+import static org.mockito.Mockito.*;
+
 class CouponValidatorServiceTest {
 
     private CouponValidatorService couponValidatorService;
 
+    @Mock
+    private CouponRepository couponRepository;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        couponValidatorService = new CouponValidatorService();
+        couponValidatorService = new CouponValidatorService(couponRepository);
     }
 
     @Test
@@ -417,5 +424,44 @@ class CouponValidatorServiceTest {
                         throwable.getMessage().contains(errorMessage) &&
                         throwable.getMessage().contains(couponWithNoAvailableUses.getId()))
                 .verify();
+    }
+
+    @Test
+    void validateCouponCode_ShouldReturnCouponDTO_WhenCouponCodeIsUnique() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        when(couponRepository.findByCode(couponDTO.getCode())).thenReturn(Mono.empty());
+
+        StepVerifier.create(couponValidatorService.validateCouponCode(couponDTO))
+                .expectNext(couponDTO)
+                .expectComplete()
+                .verify();
+
+        verify(couponRepository, times(1)).findByCode(couponDTO.getCode());
+    }
+
+    @Test
+    void validateCouponCode_ShouldThrowCouponException_WhenCouponCodeIsNotUnique() {
+        CouponDTO couponDTO = CouponTestBuilder.init()
+                .buildDTOWithDefaultValues()
+                .build();
+
+        Coupon existingCoupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        when(couponRepository.findByCode(couponDTO.getCode())).thenReturn(Mono.just(existingCoupon));
+
+
+        String errorMessage = CouponErrorCode.COUPON_CODE_ALREADY_EXISTS.withParams(couponDTO.getCode()).code();
+
+        StepVerifier.create(couponValidatorService.validateCouponCode(couponDTO))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage))
+                .verify();
+
+        verify(couponRepository, times(1)).findByCode(couponDTO.getCode());
     }
 }

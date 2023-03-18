@@ -76,6 +76,12 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
     }
 
     @Override
+    public Mono<Coupon> findByCode(String code) {
+        Query query = new Query(Criteria.where("code").is(code));
+        return mongoTemplate.findOne(query, Coupon.class);
+    }
+
+    @Override
     public Flux<Coupon> findByFilter(CouponFilter couponFilter) {
         Query query = new Query();
 

@@ -5,6 +5,7 @@ import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
+import com.ticketflow.couponmanager.coupon.repository.CouponRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -15,6 +16,12 @@ import java.util.List;
 @Slf4j
 @Service
 public class CouponValidatorService {
+
+    private final CouponRepository couponRepository;
+
+    public CouponValidatorService(CouponRepository couponRepository) {
+        this.couponRepository = couponRepository;
+    }
 
     public Mono<CouponDTO> validateCreate(CouponDTO coupon) {
         log.debug("Validating coupon id: {}", coupon.getId());
@@ -108,6 +115,12 @@ public class CouponValidatorService {
         }
 
         return Mono.just(coupon);
+    }
+
+    public Mono<CouponDTO> validateCouponCode(CouponDTO coupon) {
+        return couponRepository.findByCode(coupon.getCode())
+                .flatMap(existingCoupon -> Mono.error(new CouponException(CouponErrorCode.COUPON_CODE_ALREADY_EXISTS.withParams(coupon.getCode()))))
+                .then(Mono.just(coupon));
     }
 
 }

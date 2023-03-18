@@ -13,4 +13,6 @@ public interface CustomCouponRepository {
 
     Mono<Coupon> updateUsage(Coupon coupon);
 
+    Mono<Coupon> findByCode(String code);
+
 }

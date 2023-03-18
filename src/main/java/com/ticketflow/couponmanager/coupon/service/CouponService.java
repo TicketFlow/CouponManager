@@ -13,14 +13,13 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+
 @Slf4j
 @Service
 public class CouponService {
 
     private final CouponRepository couponRepository;
-
     private final CouponValidatorService couponValidatorService;
-
     @Qualifier("modelMapperConfig")
     private final ModelMapper modelMapper;
 
@@ -41,12 +40,12 @@ public class CouponService {
         log.info("Creating new coupon");
 
         return couponValidatorService.validateCreate(coupon)
+                .flatMap(couponValidatorService::validateCouponCode)
                 .doOnNext(CouponDTO::activate)
                 .map(this::toCoupon)
                 .flatMap(couponRepository::save)
                 .map(this::toCouponDTO);
     }
-
 
     public Mono<CouponDTO> updateCoupon(CouponDTO couponDTO) {
         log.info("Updating coupon id: {}", couponDTO.getId());

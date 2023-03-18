@@ -78,6 +78,7 @@ public class CouponServiceTest {
                 .build();
 
         when(couponValidatorService.validateCreate(couponDTO)).thenReturn(Mono.just(couponDTO));
+        when(couponValidatorService.validateCouponCode(couponDTO)).thenReturn(Mono.just(couponDTO));
         when(couponRepository.save(coupon)).thenReturn(Mono.just(coupon));
 
         StepVerifier.create(couponService.createCoupon(couponDTO))
