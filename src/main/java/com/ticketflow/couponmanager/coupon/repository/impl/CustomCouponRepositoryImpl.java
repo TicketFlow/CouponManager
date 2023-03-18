@@ -21,7 +21,7 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
 
     private final ReactiveMongoTemplate mongoTemplate;
 
-    private final String EXPIRATION_DATE_STRING = "expirationDate";
+    private static final String EXPIRATION_DATE_STRING = "expirationDate";
 
     @Override
     public Mono<Coupon> update(Coupon coupon) {
