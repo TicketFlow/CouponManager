@@ -63,6 +63,7 @@ class CouponServiceTest {
                 .verifyComplete();
 
         verify(couponRepository).findByFilter(filter);
+
     }
 
 
