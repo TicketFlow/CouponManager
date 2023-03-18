@@ -35,6 +35,7 @@ public class CouponController {
         return couponService.validateCoupon(id);
     }
 
+
     @PutMapping("/{id}/redeem")
     public Mono<CouponDTO> redeemCoupon(@PathVariable String id) {
         return couponService.validateAndDecreaseAvailableCoupons(id);
