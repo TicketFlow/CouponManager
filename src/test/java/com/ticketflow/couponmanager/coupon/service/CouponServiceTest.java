@@ -187,6 +187,7 @@ class CouponServiceTest {
         verify(couponValidatorService, never()).checkIfCouponIsInactive(any());
     }
 
+
     @Test
     void deactivateCoupon_WhenCouponIsActive_ReturnsCoupon() {
         Coupon coupon = CouponTestBuilder.init()
