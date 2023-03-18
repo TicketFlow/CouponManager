@@ -21,8 +21,6 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
 
     private final ReactiveMongoTemplate mongoTemplate;
 
-    private static final String EXPIRATION_DATE_STRING = "expirationDate";
-
     @Override
     public Mono<Coupon> update(Coupon coupon) {
         if (coupon.getId() == null) {
@@ -38,7 +36,7 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
         }
 
         if (coupon.getExpirationDate() != null) {
-            update.set(EXPIRATION_DATE_STRING, coupon.getExpirationDate());
+            update.set("expirationDate", coupon.getExpirationDate());
         }
 
         if (coupon.getDescription() != null) {
@@ -116,7 +114,7 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
         }
 
         if (couponFilter.getExpirationDate() != null) {
-            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).is(couponFilter.getExpirationDate()));
+            query.addCriteria(Criteria.where("expirationDate").is(couponFilter.getExpirationDate()));
         }
 
         if (couponFilter.getCode() != null) {
@@ -127,7 +125,7 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
             LocalDateTime startDate = couponFilter.getExpirationDateStart();
             LocalDateTime endDate = couponFilter.getExpirationDateEnd();
 
-            query.addCriteria(Criteria.where(EXPIRATION_DATE_STRING).gte(startDate).lte(endDate));
+            query.addCriteria(Criteria.where("expirationDate").gte(startDate).lte(endDate));
         }
 
         return mongoTemplate.find(query, Coupon.class);
