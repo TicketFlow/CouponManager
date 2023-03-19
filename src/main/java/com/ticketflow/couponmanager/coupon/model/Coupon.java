@@ -9,6 +9,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Data
@@ -39,6 +41,8 @@ public class Coupon {
 
     private Integer useLimit;
 
+    private List<String> applicableCategories;
+
     public void deactivate() {
         status = Status.INACTIVE;
     }
@@ -49,6 +53,15 @@ public class Coupon {
 
     public boolean isExpired() {
         return status == Status.EXPIRED || expirationDate.isBefore(LocalDateTime.now());
+    }
+
+    public void addApplicableCategory(String category) {
+        System.out.println("add");
+        if (applicableCategories == null) {
+            applicableCategories = new ArrayList<>();
+        }
+
+        applicableCategories.add(category);
     }
 
     public boolean hasAvailableUses() {

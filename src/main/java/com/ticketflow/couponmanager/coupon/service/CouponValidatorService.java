@@ -123,4 +123,11 @@ public class CouponValidatorService {
                 .then(Mono.just(coupon));
     }
 
+    public Mono<Coupon> checkIfApplicableCategoryIsUnique(Coupon coupon, String categoryId) {
+        if (coupon.getApplicableCategories() != null && coupon.getApplicableCategories().contains(categoryId)) {
+            return Mono.error(new CouponException(CouponErrorCode.APPLICABLE_CATEGORY_ALREADY_ADDED.withParams(categoryId)));
+        }
+        return Mono.just(coupon);
+    }
+
 }

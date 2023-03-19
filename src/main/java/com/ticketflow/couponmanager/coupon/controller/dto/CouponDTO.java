@@ -43,6 +43,8 @@ public class CouponDTO {
 
     private int useLimit;
 
+    private List<String> applicableCategories;
+
     public void activate() {
         status = Status.ACTIVE;
     }

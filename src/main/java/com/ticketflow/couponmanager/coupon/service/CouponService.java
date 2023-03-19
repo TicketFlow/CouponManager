@@ -91,6 +91,24 @@ public class CouponService {
                 .map(this::toCouponDTO);
     }
 
+    public Mono<CouponDTO> addApplicableCategory(String couponId, String categoryId) {
+        // todo - validar a categoria?
+        log.info("Adding applicable category: {} to coupon {}", categoryId, couponId);
+
+        return findCouponById(couponId)
+                .flatMap(coupon -> validateAndAddApplicableCategory(coupon, categoryId))
+                .flatMap(couponRepository::updateApplicableCategories)
+                .map(this::toCouponDTO);
+    }
+
+    private Mono<Coupon> validateAndAddApplicableCategory(Coupon coupon, String categoryId) {
+        return couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId)
+                .flatMap(validatedCoupon -> {
+                    validatedCoupon.addApplicableCategory(categoryId);
+                    return Mono.just(validatedCoupon);
+                });
+    }
+
     private Mono<Coupon> findCouponById(String couponId) {
         return couponRepository.findById(couponId)
                 .switchIfEmpty(Mono.error(new NotFoundException(CouponErrorCode.COUPON_NOT_FOUND.withParams(couponId))));

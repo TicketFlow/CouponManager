@@ -139,4 +139,23 @@ public class CustomCouponRepositoryImpl implements CustomCouponRepository {
         return mongoTemplate.find(query, Coupon.class);
     }
 
+    @Override
+    public Mono<Coupon> updateApplicableCategories(Coupon coupon) {
+        if (coupon.getId() == null) {
+            return Mono.error(new CouponException(CouponErrorCode.COUPON_ID_REQUIRED.withParams()));
+        }
+
+        Query query = new Query(Criteria.where("_id").is(coupon.getId()));
+
+        Update update = new Update();
+
+        if (coupon.getApplicableCategories() != null) {
+            update.set("applicableCategories", coupon.getApplicableCategories());
+        }
+
+        FindAndModifyOptions options = new FindAndModifyOptions().returnNew(true);
+
+        return mongoTemplate.findAndModify(query, update, options, Coupon.class);
+    }
+
 }

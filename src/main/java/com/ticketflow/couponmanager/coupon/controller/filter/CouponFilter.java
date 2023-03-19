@@ -37,4 +37,7 @@ public class CouponFilter {
     private LocalDate expirationDateEnd;
 
     private String code;
+
+    private String applicableCategories;
+
 }

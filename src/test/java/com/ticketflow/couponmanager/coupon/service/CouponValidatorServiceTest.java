@@ -296,9 +296,7 @@ class CouponValidatorServiceTest {
 
     @Test
     void shouldReturnCouponWithNoChangesWhenExpirationDateIsInTheFuture() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
 
         Mono<Coupon> result = couponValidatorService.checkIfCouponIsExpired(coupon);
 
@@ -309,9 +307,7 @@ class CouponValidatorServiceTest {
 
     @Test
     void givenValidCoupon_WhenExpirationDateIsInTheFuture_ReturnsCoupon() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
 
         Mono<Coupon> result = couponValidatorService.checkIfCouponIsExpired(coupon);
 
@@ -402,9 +398,7 @@ class CouponValidatorServiceTest {
 
     @Test
     void givenActiveCoupon_whenReturnErrorIfCouponIsAlreadyInactive_shouldReturnCoupon() {
-        Coupon activeCoupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        Coupon activeCoupon = CouponTestBuilder.createDefaultCoupon();
 
         StepVerifier.create(couponValidatorService.returnErrorIfCouponIsAlreadyInactive(activeCoupon))
                 .expectNext(activeCoupon)
@@ -464,9 +458,7 @@ class CouponValidatorServiceTest {
 
     @Test
     void validateCouponCode_ShouldReturnCouponDTO_WhenCouponCodeIsUnique() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
 
         when(couponRepository.findByCode(couponDTO.getCode())).thenReturn(Mono.empty());
 
@@ -480,16 +472,10 @@ class CouponValidatorServiceTest {
 
     @Test
     void validateCouponCode_ShouldThrowCouponException_WhenCouponCodeIsNotUnique() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
-
-        Coupon existingCoupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
+        Coupon existingCoupon = CouponTestBuilder.createDefaultCoupon();
 
         when(couponRepository.findByCode(couponDTO.getCode())).thenReturn(Mono.just(existingCoupon));
-
 
         String errorMessage = CouponErrorCode.COUPON_CODE_ALREADY_EXISTS.withParams(couponDTO.getCode()).code();
 
@@ -499,5 +485,43 @@ class CouponValidatorServiceTest {
                 .verify();
 
         verify(couponRepository, times(1)).findByCode(couponDTO.getCode());
+    }
+
+    @Test
+    void checkIfApplicableCategoryIsUnique_WhenCategoryIsUnique_ReturnsCoupon() {
+        String categoryId = "100";
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
+
+        StepVerifier.create(couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId))
+                .expectNext(coupon)
+                .verifyComplete();
+    }
+
+    @Test
+    void checkIfApplicableCategoryIsUnique_WhenCategoryIsNotUnique_ReturnsError() {
+        String categoryId = "100";
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
+        coupon.addApplicableCategory(categoryId);
+
+        String errorMessage = CouponErrorCode.APPLICABLE_CATEGORY_ALREADY_ADDED.withParams(categoryId).code();
+
+        StepVerifier.create(couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains(categoryId))
+                .verify();
+    }
+
+    @Test
+    void checkIfApplicableCategoryIsUnique_WhenCategoryIsNull_ReturnsCoupon() {
+        String categoryId = "100";
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .applicableCategories(null)
+                .build();
+
+        StepVerifier.create(couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId))
+                .expectNext(coupon)
+                .verifyComplete();
     }
 }

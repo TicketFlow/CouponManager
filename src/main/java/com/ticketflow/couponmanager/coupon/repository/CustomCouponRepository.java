@@ -15,4 +15,6 @@ public interface CustomCouponRepository {
 
     Mono<Coupon> findByCode(String code);
 
+    Mono<Coupon> updateApplicableCategories(Coupon coupon);
+
 }

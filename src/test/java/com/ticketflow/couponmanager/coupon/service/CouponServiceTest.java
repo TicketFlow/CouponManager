@@ -19,8 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CouponServiceTest {
@@ -69,13 +68,8 @@ class CouponServiceTest {
     @Test
     @DisplayName("Create coupon - when coupon is valid, create new coupon")
     void createCoupon_WhenCouponIsValid_CreateCoupon() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
-
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
 
         when(couponValidatorService.validateCreate(couponDTO)).thenReturn(Mono.just(couponDTO));
         when(couponValidatorService.validateCouponCode(couponDTO)).thenReturn(Mono.just(couponDTO));
@@ -92,17 +86,9 @@ class CouponServiceTest {
     @Test
     @DisplayName("Update coupon - when coupon is found and valid, updates coupon")
     void updateCoupon_WhenCouponIsFoundAndValid_UpdatesCoupon() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
-
-        Coupon couponToUpdate = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
-
-        Coupon updatedCoupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
+        Coupon couponToUpdate = CouponTestBuilder.createDefaultCoupon();
+        Coupon updatedCoupon = CouponTestBuilder.createDefaultCoupon();
 
         when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.just(couponToUpdate));
@@ -122,9 +108,7 @@ class CouponServiceTest {
     @Test
     @DisplayName("Given a couponDTO with invalid id, when updateCoupon is called, then it should throw CouponException with COUPON_NOT_FOUND error code")
     void givenInvalidId_whenUpdateCoupon_thenThrowCouponExceptionWithCouponNotFoundErrorCode() {
-        CouponDTO couponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
 
         when(couponValidatorService.validateCouponId(couponDTO.getId())).thenReturn(Mono.empty());
         when(couponRepository.findById(couponDTO.getId())).thenReturn(Mono.empty());
@@ -143,9 +127,7 @@ class CouponServiceTest {
     @Test
     @DisplayName("Check if coupon is valid - when coupon is valid, return coupon")
     void checkIfCouponIsValid_WhenCouponIsValid_ReturnCoupon() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
 
         CouponDTO expectedCouponDTO = CouponTestBuilder.init()
                 .buildDTOWithDefaultValues()
@@ -188,9 +170,7 @@ class CouponServiceTest {
 
     @Test
     void deactivateCoupon_WhenCouponIsActive_ReturnsCoupon() {
-        Coupon coupon = CouponTestBuilder.init()
-                .buildModelWithDefaultValues()
-                .build();
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
 
         Coupon inactiveCoupon = CouponTestBuilder.init()
                 .buildModelWithDefaultValues()
@@ -250,4 +230,29 @@ class CouponServiceTest {
         verify(couponValidatorService, times(1)).checkIfCouponIsInactive(coupon);
         verify(couponValidatorService, times(1)).checkIfCouponHaveAvailableUses(coupon);
     }
+
+    @Test
+    void addApplicableCategory_WhenCategoryIsUnique_AddsCategoryAndReturnsCouponDTO() {
+        String categoryId = "100";
+
+        Coupon coupon = CouponTestBuilder.createDefaultCoupon();
+        Coupon updatedCoupon = CouponTestBuilder.createDefaultCoupon();
+        updatedCoupon.addApplicableCategory(categoryId);
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId)).thenReturn(Mono.just(coupon));
+        when(couponRepository.updateApplicableCategories(coupon)).thenReturn(Mono.just(updatedCoupon));
+
+        StepVerifier.create(couponService.addApplicableCategory(coupon.getId(), categoryId))
+                .assertNext(couponDTO -> {
+                    assertEquals(coupon.getId(), couponDTO.getId());
+                    assertTrue(couponDTO.getApplicableCategories().contains(categoryId));
+                })
+                .verifyComplete();
+
+        verify(couponRepository).findById(coupon.getId());
+        verify(couponValidatorService).checkIfApplicableCategoryIsUnique(coupon, categoryId);
+        verify(couponRepository).updateApplicableCategories(coupon);
+    }
+
 }
