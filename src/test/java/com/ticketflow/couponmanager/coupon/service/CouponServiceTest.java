@@ -4,6 +4,7 @@ package com.ticketflow.couponmanager.coupon.service;
 import com.ticketflow.couponmanager.coupon.controller.dto.CouponDTO;
 import com.ticketflow.couponmanager.coupon.controller.filter.CouponFilter;
 import com.ticketflow.couponmanager.coupon.enums.Status;
+import com.ticketflow.couponmanager.coupon.exception.CouponException;
 import com.ticketflow.couponmanager.coupon.exception.NotFoundException;
 import com.ticketflow.couponmanager.coupon.exception.util.CouponErrorCode;
 import com.ticketflow.couponmanager.coupon.model.Coupon;
@@ -128,10 +129,7 @@ class CouponServiceTest {
     @DisplayName("Check if coupon is valid - when coupon is valid, return coupon")
     void checkIfCouponIsValid_WhenCouponIsValid_ReturnCoupon() {
         Coupon coupon = CouponTestBuilder.createDefaultCoupon();
-
-        CouponDTO expectedCouponDTO = CouponTestBuilder.init()
-                .buildDTOWithDefaultValues()
-                .build();
+        CouponDTO expectedCouponDTO = CouponTestBuilder.createDefaultCouponDTO();
 
         when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
         when(couponValidatorService.checkIfCouponIsExpired(coupon)).thenReturn(Mono.just(coupon));
@@ -253,6 +251,86 @@ class CouponServiceTest {
         verify(couponRepository).findById(coupon.getId());
         verify(couponValidatorService).checkIfApplicableCategoryIsUnique(coupon, categoryId);
         verify(couponRepository).updateApplicableCategories(coupon);
+    }
+
+    @Test
+    void addApplicableCategory_WhenHaveNoOtherCategory_AddsCategoryAndReturnsCouponDTO() {
+        String categoryId = "100";
+
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .applicableCategories(null)
+                .build();
+
+        Coupon updatedCoupon = CouponTestBuilder.createDefaultCoupon();
+        updatedCoupon.addApplicableCategory(categoryId);
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfApplicableCategoryIsUnique(coupon, categoryId)).thenReturn(Mono.just(coupon));
+        when(couponRepository.updateApplicableCategories(coupon)).thenReturn(Mono.just(updatedCoupon));
+
+        StepVerifier.create(couponService.addApplicableCategory(coupon.getId(), categoryId))
+                .assertNext(couponDTO -> {
+                    assertEquals(coupon.getId(), couponDTO.getId());
+                    assertTrue(couponDTO.getApplicableCategories().contains(categoryId));
+                })
+                .verifyComplete();
+
+        verify(couponRepository).findById(coupon.getId());
+        verify(couponValidatorService).checkIfApplicableCategoryIsUnique(coupon, categoryId);
+        verify(couponRepository).updateApplicableCategories(coupon);
+    }
+
+    @Test
+    void removeApplicableCategory_WhenCategoryExists_RemovesCategoryAndReturnsCouponDTO() {
+        String categoryId = "category1";
+
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .build();
+
+        Coupon updatedCoupon = CouponTestBuilder.createDefaultCoupon();
+        updatedCoupon.removeApplicableCategory(categoryId);
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCategoryIsInCoupon(coupon, categoryId)).thenReturn(Mono.just(coupon));
+        when(couponRepository.updateApplicableCategories(eq(updatedCoupon))).thenReturn(Mono.just(updatedCoupon));
+
+        StepVerifier.create(couponService.removeApplicableCategory(coupon.getId(), categoryId))
+                .assertNext(couponDTO -> {
+                    assertEquals(coupon.getId(), couponDTO.getId());
+                    assertFalse(couponDTO.getApplicableCategories().contains(categoryId));
+                })
+                .verifyComplete();
+
+        verify(couponRepository).findById(coupon.getId());
+        verify(couponRepository).updateApplicableCategories(any(Coupon.class));
+    }
+
+
+    @Test
+    void removeApplicableCategory_WhenApplicableCategoriesIsNull_ReturnsCouponException() {
+        String categoryId = "category1";
+
+        Coupon coupon = CouponTestBuilder.init()
+                .buildModelWithDefaultValues()
+                .applicableCategories(null)
+                .build();
+
+        when(couponRepository.findById(coupon.getId())).thenReturn(Mono.just(coupon));
+        when(couponValidatorService.checkIfCategoryIsInCoupon(coupon, categoryId))
+                .thenReturn(Mono.error(new CouponException(CouponErrorCode.CATEGORY_NOT_IN_COUPON.withParams(categoryId))));
+
+        String errorMessage = CouponErrorCode.CATEGORY_NOT_IN_COUPON.getCode();
+
+        StepVerifier.create(couponService.removeApplicableCategory(coupon.getId(), categoryId))
+                .expectErrorMatches(throwable -> throwable instanceof CouponException
+                        && throwable.getMessage().contains(errorMessage)
+                        && throwable.getMessage().contains(categoryId))
+                .verify();
+
+        verify(couponRepository).findById(coupon.getId());
+        verifyNoMoreInteractions(couponRepository);
     }
 
 }

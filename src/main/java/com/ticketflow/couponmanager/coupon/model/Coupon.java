@@ -56,12 +56,17 @@ public class Coupon {
     }
 
     public void addApplicableCategory(String category) {
-        System.out.println("add");
         if (applicableCategories == null) {
             applicableCategories = new ArrayList<>();
         }
 
         applicableCategories.add(category);
+    }
+
+    public void removeApplicableCategory(String category) {
+        if (applicableCategories != null) {
+            applicableCategories.remove(category);
+        }
     }
 
     public boolean hasAvailableUses() {

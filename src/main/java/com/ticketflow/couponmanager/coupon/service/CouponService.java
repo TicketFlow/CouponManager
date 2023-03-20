@@ -92,11 +92,21 @@ public class CouponService {
     }
 
     public Mono<CouponDTO> addApplicableCategory(String couponId, String categoryId) {
-        // todo - validar a categoria?
+        // todo - validar a categoria
         log.info("Adding applicable category: {} to coupon {}", categoryId, couponId);
 
         return findCouponById(couponId)
                 .flatMap(coupon -> validateAndAddApplicableCategory(coupon, categoryId))
+                .flatMap(couponRepository::updateApplicableCategories)
+                .map(this::toCouponDTO);
+    }
+
+    public Mono<CouponDTO> removeApplicableCategory(String couponId, String categoryId) {
+        log.info("Removing applicable category: {} from coupon {}", categoryId, couponId);
+
+        return findCouponById(couponId)
+                .flatMap(coupon -> couponValidatorService.checkIfCategoryIsInCoupon(coupon, categoryId))
+                .doOnNext(coupon -> coupon.removeApplicableCategory(categoryId))
                 .flatMap(couponRepository::updateApplicableCategories)
                 .map(this::toCouponDTO);
     }

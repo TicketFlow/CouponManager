@@ -75,7 +75,7 @@ public class ControllerExceptionHandler {
     public ErrorMessage illegalArgumentHandler(IllegalArgumentException ex) {
         ErrorMessage error = new ErrorMessage(
                 GeneralErrorCode.ILLEGAL_ARGUMENT_ERROR.getCode(),
-                messageSource.getMessage("ILLEGAL_ARGUMENT_ERROR", null, Locale.getDefault())
+                messageSource.getMessage(GeneralErrorCode.ILLEGAL_ARGUMENT_ERROR.getCode(), null, Locale.getDefault())
         );
         log.warn(ex.getMessage(), ex);
         return error;

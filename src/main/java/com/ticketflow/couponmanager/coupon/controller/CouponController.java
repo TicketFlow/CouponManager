@@ -48,9 +48,14 @@ public class CouponController {
         return couponService.deactivateCoupon(id);
     }
 
-    @PutMapping("/{id}/applicable-category/{categoryId}")
+    @PutMapping("/{id}/applicable-category/add/{categoryId}")
     public Mono<CouponDTO> addApplicableCategory(@PathVariable String id, @PathVariable String categoryId) {
         return couponService.addApplicableCategory(id, categoryId);
+    }
+
+    @PutMapping("/{id}/applicable-category/remove/{categoryId}")
+    public Mono<CouponDTO> removeApplicableCategory(@PathVariable String id, @PathVariable String categoryId) {
+        return couponService.removeApplicableCategory(id, categoryId);
     }
 
 }

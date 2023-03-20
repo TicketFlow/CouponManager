@@ -393,7 +393,6 @@ class CouponValidatorServiceTest {
                         && throwable.getMessage().contains(errorMessage)
                         && throwable.getMessage().contains(inactiveCoupon.getId()))
                 .verify();
-
     }
 
     @Test

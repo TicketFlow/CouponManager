@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
@@ -199,7 +200,7 @@ class CouponControllerTest {
         when(couponService.addApplicableCategory(couponDTO.getId(), categoryId)).thenReturn(Mono.just(couponDTO));
 
         webTestClient.put()
-                .uri("/coupon/{id}/applicable-category/{categoryId}", couponDTO.getId(), categoryId)
+                .uri("/coupon/{id}/applicable-category/add/{categoryId}", couponDTO.getId(), categoryId)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(CouponDTO.class)
@@ -207,4 +208,29 @@ class CouponControllerTest {
 
         verify(couponService, times(1)).addApplicableCategory(couponDTO.getId(), categoryId);
     }
+
+    @Test
+    @DisplayName("Should remove applicable category from coupon")
+    void removeApplicableCategory_ReturnsCouponWithoutCategory() {
+        CouponDTO couponDTO = CouponTestBuilder.createDefaultCouponDTO();
+        String categoryId = "category-123";
+
+        List<String> applicableCategories = new ArrayList<>(couponDTO.getApplicableCategories());
+        applicableCategories.add(categoryId);
+        couponDTO.setApplicableCategories(applicableCategories);
+
+        CouponDTO expectedCouponDTO = CouponTestBuilder.createDefaultCouponDTO();
+
+        when(couponService.removeApplicableCategory(couponDTO.getId(), categoryId)).thenReturn(Mono.just(expectedCouponDTO));
+
+        webTestClient.put()
+                .uri("/coupon/{id}/applicable-category/remove/{categoryId}", couponDTO.getId(), categoryId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(CouponDTO.class)
+                .isEqualTo(expectedCouponDTO);
+
+        verify(couponService, times(1)).removeApplicableCategory(couponDTO.getId(), categoryId);
+    }
+
 }

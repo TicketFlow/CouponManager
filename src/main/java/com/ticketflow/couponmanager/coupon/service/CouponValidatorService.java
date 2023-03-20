@@ -130,4 +130,12 @@ public class CouponValidatorService {
         return Mono.just(coupon);
     }
 
+    public Mono<Coupon> checkIfCategoryIsInCoupon(Coupon coupon, String categoryId) {
+        if (!coupon.getApplicableCategories().contains(categoryId)) {
+            return Mono.error(new CouponException(CouponErrorCode.CATEGORY_NOT_IN_COUPON.withParams(categoryId)));
+        }
+
+        return Mono.just(coupon);
+    }
+
 }
